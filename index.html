@@ -1,0 +1,1529 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>QQQ Pro Tracker</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #000;
+            color: #fff;
+            overflow-x: hidden;
+            padding-bottom: 20px;
+        }
+
+        /* ヘッダー */
+        .header {
+            background: #111;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #333;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header h1 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #00d4ff;
+        }
+
+        .settings-btn {
+            background: none;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .settings-btn:hover {
+            background: #222;
+            border-color: #00d4ff;
+        }
+
+        /* アラートバー */
+        .alert-bar {
+            background: #ff4757;
+            color: #fff;
+            padding: 12px 20px;
+            text-align: center;
+            font-weight: 600;
+            display: none;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        /* メインコンテンツ */
+        .main-content {
+            padding: 20px;
+        }
+
+        /* 価格セクション */
+        .price-section {
+            background: #111;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border: 1px solid #222;
+        }
+
+        .price-main {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .current-price {
+            font-size: 48px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .price-change {
+            text-align: right;
+        }
+
+        .change-amount {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .change-percent {
+            font-size: 20px;
+            font-weight: 500;
+        }
+
+        .positive { color: #00ff88; }
+        .negative { color: #ff4757; }
+
+        .price-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .detail-item {
+            background: #1a1a1a;
+            padding: 12px 15px;
+            border-radius: 10px;
+            border: 1px solid #333;
+        }
+
+        .detail-label {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 5px;
+        }
+
+        .detail-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        /* 投資指標セクション */
+        .indicators-section {
+            background: #111;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border: 1px solid #222;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #00d4ff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .indicator-grid {
+            display: grid;
+            gap: 15px;
+        }
+
+        .indicator-item {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .indicator-label {
+            font-size: 14px;
+            color: #aaa;
+        }
+
+        .indicator-value {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .ma-200 { border-left: 4px solid #ffc107; }
+        .level-12 { border-left: 4px solid #ff9f1a; }
+        .level-18 { border-left: 4px solid #ff4757; }
+
+        /* 関連指標セクション */
+        .related-section {
+            background: #111;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border: 1px solid #222;
+        }
+
+        .vix-container, .futures-container {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #333;
+            margin-bottom: 15px;
+        }
+
+        .vix-value {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .vix-status {
+            font-size: 14px;
+            padding: 5px 15px;
+            border-radius: 20px;
+            display: inline-block;
+            font-weight: 500;
+        }
+
+        .vix-low { background: #00ff88; color: #000; }
+        .vix-medium { background: #ffc107; color: #000; }
+        .vix-high { background: #ff4757; color: #fff; }
+
+        /* チャートセクション */
+        .chart-section {
+            background: #111;
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid #222;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+
+        .chart-toggle {
+            font-size: 24px;
+            transition: transform 0.3s;
+        }
+
+        .chart-toggle.open {
+            transform: rotate(180deg);
+        }
+
+        .chart-container {
+            height: 300px;
+            display: none;
+        }
+
+        .chart-container.show {
+            display: block;
+        }
+
+        .time-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .time-btn {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            color: #fff;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .time-btn:hover {
+            background: #222;
+            border-color: #00d4ff;
+        }
+
+        .time-btn.active {
+            background: #00d4ff;
+            color: #000;
+            border-color: #00d4ff;
+        }
+
+        /* 設定モーダル */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: #111;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 50px auto;
+            max-width: 400px;
+            width: 90%;
+            border: 1px solid #333;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .modal-header h2 {
+            font-size: 24px;
+            color: #00d4ff;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 28px;
+            cursor: pointer;
+        }
+
+        .setting-item {
+            margin-bottom: 25px;
+        }
+
+        .setting-label {
+            display: block;
+            margin-bottom: 10px;
+            color: #aaa;
+            font-size: 14px;
+        }
+
+        .setting-control {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .setting-control input[type="range"] {
+            flex: 1;
+        }
+
+        .setting-control input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+        }
+
+        .setting-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #00d4ff;
+            min-width: 50px;
+        }
+
+        /* マーケット状態 */
+        .market-status {
+            text-align: center;
+            padding: 10px;
+            background: #1a1a1a;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .market-open { color: #00ff88; }
+        .market-closed { color: #ff4757; }
+
+        /* ローディング */
+        .loading {
+            text-align: center;
+            padding: 50px;
+            font-size: 18px;
+            color: #666;
+        }
+
+        /* エラー表示 */
+        .error {
+            background: #ff4757;
+            color: #fff;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px;
+            text-align: center;
+        }
+
+        /* デバッグモード */
+        .debug-panel {
+            display: none;
+            background: #0a0a0a;
+            border: 1px solid #333;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px;
+            font-family: monospace;
+            font-size: 12px;
+            color: #0f0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        /* レスポンシブ対応 */
+        @media (max-width: 375px) {
+            .current-price { font-size: 40px; }
+            .change-amount { font-size: 20px; }
+            .change-percent { font-size: 18px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- ヘッダー -->
+    <div class="header">
+        <h1>QQQ Pro Tracker</h1>
+        <button class="settings-btn" onclick="app.openSettings()">設定</button>
+    </div>
+
+    <!-- アラートバー -->
+    <div class="alert-bar" id="alertBar"></div>
+
+    <!-- マーケット状態 -->
+    <div class="market-status" id="marketStatus">マーケット状態を確認中...</div>
+
+    <!-- メインコンテンツ -->
+    <div class="main-content">
+        <!-- 価格セクション -->
+        <div class="price-section">
+            <div class="price-main">
+                <div class="current-price" id="currentPrice">---</div>
+                <div class="price-change">
+                    <div class="change-amount" id="changeAmount">---</div>
+                    <div class="change-percent" id="changePercent">---</div>
+                </div>
+            </div>
+            
+            <div class="price-details">
+                <div class="detail-item">
+                    <div class="detail-label">前日終値</div>
+                    <div class="detail-value" id="prevClose">---</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">出来高</div>
+                    <div class="detail-value" id="volume">---</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">日中高値</div>
+                    <div class="detail-value" id="dayHigh">---</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">日中安値</div>
+                    <div class="detail-value" id="dayLow">---</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">52週高値</div>
+                    <div class="detail-value" id="week52High">---</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">52週安値</div>
+                    <div class="detail-value" id="week52Low">---</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">5年最高値</div>
+                    <div class="detail-value" id="year5High">---</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">5年高値差</div>
+                    <div class="detail-value" id="year5Diff">---</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 投資指標セクション -->
+        <div class="indicators-section">
+            <h2 class="section-title">
+                <span>📊</span>
+                <span>投資指標</span>
+            </h2>
+            <div class="indicator-grid">
+                <div class="indicator-item ma-200">
+                    <span class="indicator-label">200日移動平均</span>
+                    <span class="indicator-value" id="ma200">---</span>
+                </div>
+                <div class="indicator-item level-12">
+                    <span class="indicator-label">-12%水準</span>
+                    <span class="indicator-value" id="level12">---</span>
+                </div>
+                <div class="indicator-item level-18">
+                    <span class="indicator-label">-18%水準</span>
+                    <span class="indicator-value" id="level18">---</span>
+                </div>
+                <div class="indicator-item">
+                    <span class="indicator-label">週始値</span>
+                    <span class="indicator-value" id="weekOpen">---</span>
+                </div>
+                <div class="indicator-item">
+                    <span class="indicator-label">-5%ルール</span>
+                    <span class="indicator-value" id="rule5">---</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 関連指標セクション -->
+        <div class="related-section">
+            <h2 class="section-title">
+                <span>🌡️</span>
+                <span>関連指標</span>
+            </h2>
+            
+            <div class="vix-container">
+                <div class="detail-label">VIX（恐怖指数）</div>
+                <div class="vix-value" id="vixValue">---</div>
+                <span class="vix-status" id="vixStatus">---</span>
+            </div>
+
+            <div class="futures-container">
+                <div class="detail-label">NQ先物</div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                    <span style="font-size: 24px; font-weight: 600;" id="futuresPrice">---</span>
+                    <span style="font-size: 18px;" id="futuresChange">---</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- チャートセクション -->
+        <div class="chart-section">
+            <div class="chart-header" onclick="app.toggleChart()">
+                <h2 class="section-title" style="margin-bottom: 0;">
+                    <span>📈</span>
+                    <span>価格チャート</span>
+                </h2>
+                <span class="chart-toggle" id="chartToggle">▼</span>
+            </div>
+            
+            <div class="chart-container" id="chartContainer">
+                <div class="time-selector" id="timeSelector">
+                    <button class="time-btn active" data-period="1d">1日</button>
+                    <button class="time-btn" data-period="5d">5日</button>
+                    <button class="time-btn" data-period="1mo">1ヶ月</button>
+                    <button class="time-btn" data-period="3mo">3ヶ月</button>
+                    <button class="time-btn" data-period="6mo">6ヶ月</button>
+                    <button class="time-btn" data-period="1y">1年</button>
+                </div>
+                <canvas id="priceChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- デバッグパネル -->
+    <div class="debug-panel" id="debugPanel"></div>
+
+    <!-- 設定モーダル -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>設定</h2>
+                <button class="close-btn" onclick="app.closeSettings()">×</button>
+            </div>
+            
+            <div class="setting-item">
+                <label class="setting-label">更新間隔</label>
+                <div class="setting-control">
+                    <input type="range" id="refreshInterval" min="5" max="60" value="15" step="5">
+                    <span class="setting-value" id="refreshValue">15秒</span>
+                </div>
+            </div>
+
+            <div class="setting-item">
+                <label class="setting-label">音声アラート</label>
+                <div class="setting-control">
+                    <input type="checkbox" id="soundEnabled" checked>
+                    <span>有効</span>
+                </div>
+            </div>
+
+            <div class="setting-item">
+                <label class="setting-label">ブラウザ通知</label>
+                <div class="setting-control">
+                    <input type="checkbox" id="notificationEnabled">
+                    <span>有効</span>
+                </div>
+            </div>
+
+            <div class="setting-item">
+                <label class="setting-label">デバッグモード</label>
+                <div class="setting-control">
+                    <input type="checkbox" id="debugMode">
+                    <span>有効</span>
+                </div>
+            </div>
+
+            <div class="setting-item">
+                <label class="setting-label">デモモード</label>
+                <div class="setting-control">
+                    <input type="checkbox" id="demoMode">
+                    <span>有効（APIエラー時自動切替）</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // QQQ Pro Tracker Application
+        const app = {
+            // 設定（メモリ内で管理）
+            settings: {
+                refreshInterval: 15,
+                soundEnabled: true,
+                notificationEnabled: false,
+                debugMode: false,
+                demoMode: false
+            },
+
+            // データ保存用
+            data: {
+                currentPrice: null,
+                previousPrice: null,
+                previousClose: null,
+                dayHigh: null,
+                dayLow: null,
+                week52High: null,
+                week52Low: null,
+                volume: null,
+                ma200: null,
+                weekOpen: null,
+                vix: null,
+                nqFutures: null,
+                chartData: null,
+                year5High: null
+            },
+
+            // アラート発動済みフラグ
+            alertsTriggered: {
+                level12: false,
+                level18: false,
+                ma200: false,
+                rule5: false,
+                vix30: false,
+                vix35: false
+            },
+
+            // チャート関連
+            chart: null,
+            chartPeriod: '1d',
+
+            // タイマー
+            refreshTimer: null,
+
+            // CORSプロキシリスト
+            corsProxies: [
+                'https://api.allorigins.win/raw?url=',
+                'https://corsproxy.io/?',
+                'https://proxy.cors.sh/',
+                'https://thingproxy.freeboard.io/fetch/'
+            ],
+            currentProxyIndex: 0,
+
+            // 初期化
+            init() {
+                this.log('QQQ Pro Tracker 初期化開始');
+                
+                // イベントリスナー設定
+                this.setupEventListeners();
+                
+                // 通知権限リクエスト
+                if ('Notification' in window && Notification.permission === 'default') {
+                    Notification.requestPermission();
+                }
+                
+                // 初回データ取得
+                this.fetchData();
+                
+                // 自動更新開始
+                this.startAutoRefresh();
+                
+                // チャート初期化
+                this.initChart();
+                
+                this.log('初期化完了');
+            },
+
+            // イベントリスナー設定
+            setupEventListeners() {
+                // 更新間隔スライダー
+                document.getElementById('refreshInterval').addEventListener('input', (e) => {
+                    this.settings.refreshInterval = parseInt(e.target.value);
+                    document.getElementById('refreshValue').textContent = `${e.target.value}秒`;
+                    this.startAutoRefresh(); // 再起動
+                });
+
+                // 音声アラート
+                document.getElementById('soundEnabled').addEventListener('change', (e) => {
+                    this.settings.soundEnabled = e.target.checked;
+                });
+
+                // 通知
+                document.getElementById('notificationEnabled').addEventListener('change', (e) => {
+                    this.settings.notificationEnabled = e.target.checked;
+                    if (e.target.checked && Notification.permission === 'default') {
+                        Notification.requestPermission();
+                    }
+                });
+
+                // デバッグモード
+                document.getElementById('debugMode').addEventListener('change', (e) => {
+                    this.settings.debugMode = e.target.checked;
+                    document.getElementById('debugPanel').style.display = e.target.checked ? 'block' : 'none';
+                });
+
+                // デモモード
+                document.getElementById('demoMode').addEventListener('change', (e) => {
+                    this.settings.demoMode = e.target.checked;
+                    if (e.target.checked) {
+                        this.useDemoData();
+                    } else {
+                        this.fetchData();
+                    }
+                });
+
+                // チャート期間選択
+                document.querySelectorAll('.time-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+                        e.target.classList.add('active');
+                        this.chartPeriod = e.target.dataset.period;
+                        this.fetchChartData();
+                    });
+                });
+            },
+
+            // データ取得
+            async fetchData() {
+                this.log('データ取得開始');
+                
+                try {
+                    // QQQデータ取得
+                    const qqqData = await this.fetchWithProxy('https://query1.finance.yahoo.com/v8/finance/chart/QQQ');
+                    
+                    if (qqqData && qqqData.chart && qqqData.chart.result && qqqData.chart.result[0]) {
+                        const result = qqqData.chart.result[0];
+                        const quote = result.indicators.quote[0];
+                        const meta = result.meta;
+                        
+                        // データ更新
+                        this.data.currentPrice = meta.regularMarketPrice;
+                        this.data.previousClose = meta.previousClose;
+                        this.data.dayHigh = meta.regularMarketDayHigh;
+                        this.data.dayLow = meta.regularMarketDayLow;
+                        this.data.volume = quote.volume[quote.volume.length - 1];
+                        
+                        // 52週高値・安値
+                        this.data.week52High = meta.fiftyTwoWeekHigh;
+                        this.data.week52Low = meta.fiftyTwoWeekLow;
+                        
+                        // UI更新
+                        this.updateUI();
+                        
+                        // 200MA計算
+                        await this.calculate200MA();
+                        
+                        // VIXデータ取得
+                        await this.fetchVIX();
+                        
+                        // NQ先物データ取得
+                        await this.fetchNQFutures();
+                        
+                        // 週始値取得
+                        await this.fetchWeekOpen();
+                        
+                        // 5年最高値取得
+                        await this.fetch5YearHigh();
+                        
+                        // アラートチェック
+                        this.checkAlerts();
+                        
+                        // マーケット状態更新
+                        this.updateMarketStatus();
+                        
+                    } else {
+                        throw new Error('データ形式が不正です');
+                    }
+                    
+                } catch (error) {
+                    this.log(`エラー: ${error.message}`, 'error');
+                    
+                    // デモモードに自動切替
+                    if (!this.settings.demoMode) {
+                        this.log('デモモードに切り替えます');
+                        this.settings.demoMode = true;
+                        document.getElementById('demoMode').checked = true;
+                        this.useDemoData();
+                    }
+                }
+            },
+
+            // CORSプロキシ経由でのデータ取得
+            async fetchWithProxy(url) {
+                const maxRetries = this.corsProxies.length;
+                let retries = 0;
+                
+                while (retries < maxRetries) {
+                    const proxy = this.corsProxies[this.currentProxyIndex];
+                    const proxyUrl = proxy + encodeURIComponent(url);
+                    
+                    try {
+                        this.log(`プロキシ使用: ${proxy}`);
+                        const response = await fetch(proxyUrl);
+                        
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        
+                        const data = await response.json();
+                        return data;
+                        
+                    } catch (error) {
+                        this.log(`プロキシ ${proxy} でエラー: ${error.message}`, 'error');
+                        
+                        // 次のプロキシに切り替え
+                        this.currentProxyIndex = (this.currentProxyIndex + 1) % this.corsProxies.length;
+                        retries++;
+                    }
+                }
+                
+                throw new Error('すべてのプロキシで失敗しました');
+            },
+
+            // 200MA計算
+            async calculate200MA() {
+                try {
+                    this.log('200MA計算開始');
+                    
+                    // 過去200営業日分のデータを取得
+                    const endDate = Math.floor(Date.now() / 1000);
+                    const startDate = endDate - (300 * 24 * 60 * 60); // 300日前（余裕を持って）
+                    
+                    const url = `https://query1.finance.yahoo.com/v8/finance/chart/QQQ?period1=${startDate}&period2=${endDate}&interval=1d`;
+                    const data = await this.fetchWithProxy(url);
+                    
+                    if (data && data.chart && data.chart.result && data.chart.result[0]) {
+                        const closes = data.chart.result[0].indicators.quote[0].close;
+                        
+                        // null値を除外し、最新200個を取得
+                        const validCloses = closes.filter(c => c !== null);
+                        const last200 = validCloses.slice(-200);
+                        
+                        if (last200.length >= 200) {
+                            const sum = last200.reduce((a, b) => a + b, 0);
+                            this.data.ma200 = sum / 200;
+                            
+                            document.getElementById('ma200').textContent = `$${this.data.ma200.toFixed(2)}`;
+                            this.log(`200MA計算完了: $${this.data.ma200.toFixed(2)}`);
+                        } else {
+                            this.log(`データ不足: ${last200.length}日分のみ`, 'warn');
+                        }
+                    }
+                    
+                } catch (error) {
+                    this.log(`200MA計算エラー: ${error.message}`, 'error');
+                }
+            },
+
+            // VIXデータ取得
+            async fetchVIX() {
+                try {
+                    this.log('VIXデータ取得開始');
+                    
+                    const data = await this.fetchWithProxy('https://query1.finance.yahoo.com/v8/finance/chart/^VIX');
+                    
+                    if (data && data.chart && data.chart.result && data.chart.result[0]) {
+                        const meta = data.chart.result[0].meta;
+                        this.data.vix = {
+                            value: meta.regularMarketPrice,
+                            change: meta.regularMarketPrice - meta.previousClose,
+                            changePercent: ((meta.regularMarketPrice - meta.previousClose) / meta.previousClose) * 100
+                        };
+                        
+                        // VIX表示更新
+                        this.updateVIX();
+                        
+                    }
+                } catch (error) {
+                    this.log(`VIXデータ取得エラー: ${error.message}`, 'error');
+                }
+            },
+
+            // NQ先物データ取得
+            async fetchNQFutures() {
+                try {
+                    this.log('NQ先物データ取得開始');
+                    
+                    const data = await this.fetchWithProxy('https://query1.finance.yahoo.com/v8/finance/chart/NQ=F');
+                    
+                    if (data && data.chart && data.chart.result && data.chart.result[0]) {
+                        const meta = data.chart.result[0].meta;
+                        this.data.nqFutures = {
+                            price: meta.regularMarketPrice,
+                            change: meta.regularMarketPrice - meta.previousClose,
+                            changePercent: ((meta.regularMarketPrice - meta.previousClose) / meta.previousClose) * 100
+                        };
+                        
+                        // NQ先物表示更新
+                        this.updateNQFutures();
+                        
+                    }
+                } catch (error) {
+                    this.log(`NQ先物データ取得エラー: ${error.message}`, 'error');
+                }
+            },
+
+            // 週始値取得
+            async fetchWeekOpen() {
+                try {
+                    this.log('週始値取得開始');
+                    
+                    // 現在の日付から今週の月曜日を計算
+                    const now = new Date();
+                    const dayOfWeek = now.getDay();
+                    const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // 日曜日の場合は前週の月曜日
+                    const monday = new Date(now);
+                    monday.setDate(monday.getDate() + diff);
+                    monday.setHours(0, 0, 0, 0);
+                    
+                    const startTime = Math.floor(monday.getTime() / 1000);
+                    const endTime = startTime + (5 * 24 * 60 * 60); // 金曜日まで
+                    
+                    const url = `https://query1.finance.yahoo.com/v8/finance/chart/QQQ?period1=${startTime}&period2=${endTime}&interval=1d`;
+                    const data = await this.fetchWithProxy(url);
+                    
+                    if (data && data.chart && data.chart.result && data.chart.result[0]) {
+                        const opens = data.chart.result[0].indicators.quote[0].open;
+                        
+                        // 最初の有効な始値を週始値とする
+                        for (let i = 0; i < opens.length; i++) {
+                            if (opens[i] !== null) {
+                                this.data.weekOpen = opens[i];
+                                document.getElementById('weekOpen').textContent = `$${this.data.weekOpen.toFixed(2)}`;
+                                
+                                // -5%ルール計算
+                                if (this.data.currentPrice && this.data.weekOpen) {
+                                    const weekChange = ((this.data.currentPrice - this.data.weekOpen) / this.data.weekOpen) * 100;
+                                    const rule5Element = document.getElementById('rule5');
+                                    rule5Element.textContent = `${weekChange >= 0 ? '+' : ''}${weekChange.toFixed(2)}%`;
+                                    rule5Element.className = weekChange < 0 ? 'indicator-value negative' : 'indicator-value positive';
+                                }
+                                
+                                break;
+                            }
+                        }
+                    }
+                    
+                } catch (error) {
+                    this.log(`週始値取得エラー: ${error.message}`, 'error');
+                }
+            },
+
+            // 5年最高値取得
+            async fetch5YearHigh() {
+                try {
+                    this.log('5年最高値取得開始');
+                    
+                    const endDate = Math.floor(Date.now() / 1000);
+                    const startDate = endDate - (5 * 365 * 24 * 60 * 60); // 5年前
+                    
+                    const url = `https://query1.finance.yahoo.com/v8/finance/chart/QQQ?period1=${startDate}&period2=${endDate}&interval=1wk`;
+                    const data = await this.fetchWithProxy(url);
+                    
+                    if (data && data.chart && data.chart.result && data.chart.result[0]) {
+                        const highs = data.chart.result[0].indicators.quote[0].high;
+                        
+                        // null値を除外して最高値を取得
+                        const validHighs = highs.filter(h => h !== null);
+                        this.data.year5High = Math.max(...validHighs);
+                        
+                        document.getElementById('year5High').textContent = `$${this.data.year5High.toFixed(2)}`;
+                        
+                        // 現在価格との差を計算
+                        if (this.data.currentPrice) {
+                            const diff = ((this.data.currentPrice - this.data.year5High) / this.data.year5High) * 100;
+                            const diffElement = document.getElementById('year5Diff');
+                            diffElement.textContent = `${diff >= 0 ? '+' : ''}${diff.toFixed(2)}%`;
+                            diffElement.className = diff < 0 ? 'detail-value negative' : 'detail-value positive';
+                        }
+                    }
+                    
+                } catch (error) {
+                    this.log(`5年最高値取得エラー: ${error.message}`, 'error');
+                }
+            },
+
+            // チャートデータ取得
+            async fetchChartData() {
+                try {
+                    this.log(`チャートデータ取得開始: ${this.chartPeriod}`);
+                    
+                    const periods = {
+                        '1d': { interval: '5m', range: '1d' },
+                        '5d': { interval: '30m', range: '5d' },
+                        '1mo': { interval: '1h', range: '1mo' },
+                        '3mo': { interval: '1d', range: '3mo' },
+                        '6mo': { interval: '1d', range: '6mo' },
+                        '1y': { interval: '1wk', range: '1y' }
+                    };
+                    
+                    const config = periods[this.chartPeriod];
+                    const url = `https://query1.finance.yahoo.com/v8/finance/chart/QQQ?range=${config.range}&interval=${config.interval}`;
+                    
+                    const data = await this.fetchWithProxy(url);
+                    
+                    if (data && data.chart && data.chart.result && data.chart.result[0]) {
+                        const result = data.chart.result[0];
+                        const timestamps = result.timestamp;
+                        const closes = result.indicators.quote[0].close;
+                        
+                        // チャートデータを整形
+                        this.chartData = {
+                            labels: timestamps.map(t => this.formatTimestamp(t * 1000, this.chartPeriod)),
+                            prices: closes
+                        };
+                        
+                        // チャート更新
+                        this.updateChart();
+                    }
+                    
+                } catch (error) {
+                    this.log(`チャートデータ取得エラー: ${error.message}`, 'error');
+                }
+            },
+
+            // タイムスタンプフォーマット
+            formatTimestamp(timestamp, period) {
+                const date = new Date(timestamp);
+                
+                switch (period) {
+                    case '1d':
+                        return date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+                    case '5d':
+                        return date.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                    default:
+                        return date.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' });
+                }
+            },
+
+            // UI更新
+            updateUI() {
+                if (!this.data.currentPrice) return;
+                
+                // 現在価格
+                document.getElementById('currentPrice').textContent = `$${this.data.currentPrice.toFixed(2)}`;
+                
+                // 変動額・率
+                const change = this.data.currentPrice - this.data.previousClose;
+                const changePercent = (change / this.data.previousClose) * 100;
+                
+                const changeAmountEl = document.getElementById('changeAmount');
+                const changePercentEl = document.getElementById('changePercent');
+                
+                changeAmountEl.textContent = `${change >= 0 ? '+' : ''}${change.toFixed(2)}`;
+                changePercentEl.textContent = `(${change >= 0 ? '+' : ''}${changePercent.toFixed(2)}%)`;
+                
+                changeAmountEl.className = change >= 0 ? 'change-amount positive' : 'change-amount negative';
+                changePercentEl.className = change >= 0 ? 'change-percent positive' : 'change-percent negative';
+                
+                // その他の価格情報
+                document.getElementById('prevClose').textContent = `$${this.data.previousClose.toFixed(2)}`;
+                document.getElementById('dayHigh').textContent = `$${this.data.dayHigh.toFixed(2)}`;
+                document.getElementById('dayLow').textContent = `$${this.data.dayLow.toFixed(2)}`;
+                document.getElementById('week52High').textContent = `$${this.data.week52High.toFixed(2)}`;
+                document.getElementById('week52Low').textContent = `$${this.data.week52Low.toFixed(2)}`;
+                
+                // 出来高
+                document.getElementById('volume').textContent = this.formatVolume(this.data.volume);
+                
+                // -12%、-18%水準
+                const level12 = this.data.previousClose * 0.88;
+                const level18 = this.data.previousClose * 0.82;
+                
+                document.getElementById('level12').textContent = `$${level12.toFixed(2)}`;
+                document.getElementById('level18').textContent = `$${level18.toFixed(2)}`;
+                
+                // 水準の色変更
+                if (this.data.currentPrice <= level18) {
+                    document.getElementById('level18').style.color = '#ff4757';
+                } else if (this.data.currentPrice <= level12) {
+                    document.getElementById('level12').style.color = '#ff9f1a';
+                }
+            },
+
+            // VIX表示更新
+            updateVIX() {
+                if (!this.data.vix) return;
+                
+                const vixValueEl = document.getElementById('vixValue');
+                const vixStatusEl = document.getElementById('vixStatus');
+                
+                vixValueEl.textContent = this.data.vix.value.toFixed(2);
+                
+                // 変動表示
+                const changeText = `${this.data.vix.change >= 0 ? '+' : ''}${this.data.vix.change.toFixed(2)} (${this.data.vix.changePercent >= 0 ? '+' : ''}${this.data.vix.changePercent.toFixed(2)}%)`;
+                vixValueEl.innerHTML = `${this.data.vix.value.toFixed(2)}<br><span style="font-size: 16px; color: ${this.data.vix.change >= 0 ? '#ff4757' : '#00ff88'}">${changeText}</span>`;
+                
+                // ステータス判定
+                let status, statusClass;
+                if (this.data.vix.value < 20) {
+                    status = '低ボラティリティ';
+                    statusClass = 'vix-low';
+                } else if (this.data.vix.value < 30) {
+                    status = '中ボラティリティ';
+                    statusClass = 'vix-medium';
+                } else {
+                    status = '高ボラティリティ';
+                    statusClass = 'vix-high';
+                }
+                
+                vixStatusEl.textContent = status;
+                vixStatusEl.className = `vix-status ${statusClass}`;
+            },
+
+            // NQ先物表示更新
+            updateNQFutures() {
+                if (!this.data.nqFutures) return;
+                
+                document.getElementById('futuresPrice').textContent = `$${this.data.nqFutures.price.toFixed(2)}`;
+                
+                const changeEl = document.getElementById('futuresChange');
+                const changeText = `${this.data.nqFutures.change >= 0 ? '+' : ''}${this.data.nqFutures.change.toFixed(2)} (${this.data.nqFutures.changePercent >= 0 ? '+' : ''}${this.data.nqFutures.changePercent.toFixed(2)}%)`;
+                
+                changeEl.textContent = changeText;
+                changeEl.className = this.data.nqFutures.change >= 0 ? 'positive' : 'negative';
+            },
+
+            // マーケット状態更新
+            updateMarketStatus() {
+                const now = new Date();
+                const nyTime = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
+                const day = nyTime.getDay();
+                const hour = nyTime.getHours();
+                const minute = nyTime.getMinutes();
+                
+                let status, statusClass;
+                
+                // 週末チェック
+                if (day === 0 || day === 6) {
+                    status = '週末（マーケット休場）';
+                    statusClass = 'market-closed';
+                } else if (hour < 9 || hour >= 16 || (hour === 9 && minute < 30)) {
+                    status = 'マーケット時間外';
+                    statusClass = 'market-closed';
+                } else {
+                    status = 'マーケット開場中';
+                    statusClass = 'market-open';
+                }
+                
+                const statusEl = document.getElementById('marketStatus');
+                statusEl.textContent = status + ` (NY時間: ${nyTime.toLocaleTimeString('ja-JP')})`;
+                statusEl.className = `market-status ${statusClass}`;
+            },
+
+            // アラートチェック
+            checkAlerts() {
+                if (!this.data.currentPrice || !this.data.previousClose) return;
+                
+                const alerts = [];
+                
+                // -12%水準チェック
+                const level12 = this.data.previousClose * 0.88;
+                if (this.data.currentPrice <= level12 && !this.alertsTriggered.level12) {
+                    alerts.push('🚨 -12%水準を下回りました！');
+                    this.alertsTriggered.level12 = true;
+                } else if (this.data.currentPrice > level12) {
+                    this.alertsTriggered.level12 = false;
+                }
+                
+                // -18%水準チェック
+                const level18 = this.data.previousClose * 0.82;
+                if (this.data.currentPrice <= level18 && !this.alertsTriggered.level18) {
+                    alerts.push('🚨 -18%水準を下回りました！');
+                    this.alertsTriggered.level18 = true;
+                } else if (this.data.currentPrice > level18) {
+                    this.alertsTriggered.level18 = false;
+                }
+                
+                // 200MAチェック
+                if (this.data.ma200 && this.data.currentPrice <= this.data.ma200 && !this.alertsTriggered.ma200) {
+                    alerts.push('📊 200日移動平均を下回りました！');
+                    this.alertsTriggered.ma200 = true;
+                } else if (this.data.ma200 && this.data.currentPrice > this.data.ma200) {
+                    this.alertsTriggered.ma200 = false;
+                }
+                
+                // -5%ルールチェック
+                if (this.data.weekOpen) {
+                    const weekChange = ((this.data.currentPrice - this.data.weekOpen) / this.data.weekOpen) * 100;
+                    if (weekChange <= -5 && !this.alertsTriggered.rule5) {
+                        alerts.push('📉 -5%ルール発動！（週始値から-5%以上の下落）');
+                        this.alertsTriggered.rule5 = true;
+                    } else if (weekChange > -5) {
+                        this.alertsTriggered.rule5 = false;
+                    }
+                }
+                
+                // VIXチェック
+                if (this.data.vix) {
+                    if (this.data.vix.value >= 35 && !this.alertsTriggered.vix35) {
+                        alerts.push('🌡️ VIX 35超え！（極度の恐怖）');
+                        this.alertsTriggered.vix35 = true;
+                    } else if (this.data.vix.value < 35) {
+                        this.alertsTriggered.vix35 = false;
+                    }
+                    
+                    if (this.data.vix.value >= 30 && this.data.vix.value < 35 && !this.alertsTriggered.vix30) {
+                        alerts.push('🌡️ VIX 30超え！（高ボラティリティ）');
+                        this.alertsTriggered.vix30 = true;
+                    } else if (this.data.vix.value < 30) {
+                        this.alertsTriggered.vix30 = false;
+                    }
+                }
+                
+                // アラート表示
+                if (alerts.length > 0) {
+                    this.showAlert(alerts.join(' '));
+                }
+            },
+
+            // アラート表示
+            showAlert(message) {
+                // ビジュアルアラート
+                const alertBar = document.getElementById('alertBar');
+                alertBar.textContent = message;
+                alertBar.style.display = 'block';
+                
+                // 音声アラート
+                if (this.settings.soundEnabled) {
+                    this.playAlertSound();
+                }
+                
+                // ブラウザ通知
+                if (this.settings.notificationEnabled && Notification.permission === 'granted') {
+                    new Notification('QQQ Pro Tracker アラート', {
+                        body: message,
+                        icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTYiIGZpbGw9IiMwMEQ0RkYiLz4KPHBhdGggZD0iTTMyIDQ4QzQwLjgzNjYgNDggNDggNDAuODM2NiA0OCAzMkM0OCAyMy4xNjM0IDQwLjgzNjYgMTYgMzIgMTZDMjMuMTYzNCAxNiAxNiAyMy4xNjM0IDE2IDMyQzE2IDQwLjgzNjYgMjMuMTYzNCA0OCAzMiA0OFoiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4='
+                    });
+                }
+                
+                // 10秒後に自動で非表示
+                setTimeout(() => {
+                    alertBar.style.display = 'none';
+                }, 10000);
+            },
+
+            // アラート音再生
+            playAlertSound() {
+                // AudioContextを使用してビープ音を生成
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = 800; // 周波数
+                gainNode.gain.value = 0.3; // 音量
+                
+                oscillator.start();
+                oscillator.stop(audioContext.currentTime + 0.2); // 0.2秒間再生
+            },
+
+            // チャート初期化
+            initChart() {
+                const ctx = document.getElementById('priceChart').getContext('2d');
+                
+                this.chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [
+                            {
+                                label: 'QQQ価格',
+                                data: [],
+                                borderColor: '#00d4ff',
+                                backgroundColor: 'rgba(0, 212, 255, 0.1)',
+                                borderWidth: 2,
+                                tension: 0.1,
+                                pointRadius: 0,
+                                pointHoverRadius: 4
+                            },
+                            {
+                                label: '200MA',
+                                data: [],
+                                borderColor: '#ffc107',
+                                borderWidth: 2,
+                                borderDash: [5, 5],
+                                tension: 0,
+                                pointRadius: 0,
+                                pointHoverRadius: 0
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false
+                        },
+                        plugins: {
+                            legend: {
+                                display: true,
+                                labels: {
+                                    color: '#fff',
+                                    usePointStyle: true,
+                                    padding: 20
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                                titleColor: '#fff',
+                                bodyColor: '#fff',
+                                borderColor: '#333',
+                                borderWidth: 1,
+                                padding: 10,
+                                displayColors: true,
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.dataset.label + ': $' + context.parsed.y.toFixed(2);
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)',
+                                    drawBorder: false
+                                },
+                                ticks: {
+                                    color: '#888',
+                                    maxRotation: 45,
+                                    minRotation: 45
+                                }
+                            },
+                            y: {
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)',
+                                    drawBorder: false
+                                },
+                                ticks: {
+                                    color: '#888',
+                                    callback: function(value) {
+                                        return '$' + value.toFixed(0);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            },
+
+            // チャート更新
+            updateChart() {
+                if (!this.chart || !this.chartData) return;
+                
+                this.chart.data.labels = this.chartData.labels;
+                this.chart.data.datasets[0].data = this.chartData.prices;
+                
+                // 200MAライン
+                if (this.data.ma200) {
+                    this.chart.data.datasets[1].data = new Array(this.chartData.prices.length).fill(this.data.ma200);
+                }
+                
+                this.chart.update();
+            },
+
+            // チャート表示切替
+            toggleChart() {
+                const container = document.getElementById('chartContainer');
+                const toggle = document.getElementById('chartToggle');
+                
+                if (container.classList.contains('show')) {
+                    container.classList.remove('show');
+                    toggle.classList.remove('open');
+                } else {
+                    container.classList.add('show');
+                    toggle.classList.add('open');
+                    
+                    // 初回表示時にチャートデータ取得
+                    if (!this.chartData) {
+                        this.fetchChartData();
+                    }
+                }
+            },
+
+            // 出来高フォーマット
+            formatVolume(volume) {
+                if (!volume) return '---';
+                
+                if (volume >= 1e9) {
+                    return (volume / 1e9).toFixed(2) + 'B';
+                } else if (volume >= 1e6) {
+                    return (volume / 1e6).toFixed(2) + 'M';
+                } else if (volume >= 1e3) {
+                    return (volume / 1e3).toFixed(2) + 'K';
+                }
+                
+                return volume.toString();
+            },
+
+            // デモデータ使用
+            useDemoData() {
+                this.log('デモモード: サンプルデータを使用します');
+                
+                // サンプルデータ設定
+                this.data = {
+                    currentPrice: 432.58,
+                    previousPrice: 435.20,
+                    previousClose: 435.20,
+                    dayHigh: 437.85,
+                    dayLow: 430.12,
+                    week52High: 508.59,
+                    week52Low: 362.45,
+                    volume: 45832100,
+                    ma200: 445.32,
+                    weekOpen: 440.25,
+                    vix: {
+                        value: 18.45,
+                        change: 1.23,
+                        changePercent: 7.14
+                    },
+                    nqFutures: {
+                        price: 18652.25,
+                        change: -125.50,
+                        changePercent: -0.67
+                    },
+                    year5High: 508.59
+                };
+                
+                // UI更新
+                this.updateUI();
+                this.updateVIX();
+                this.updateNQFutures();
+                this.updateMarketStatus();
+                
+                // デモチャートデータ
+                const labels = [];
+                const prices = [];
+                for (let i = 0; i < 50; i++) {
+                    labels.push(`${i}:00`);
+                    prices.push(430 + Math.random() * 10);
+                }
+                
+                this.chartData = { labels, prices };
+                this.updateChart();
+            },
+
+            // 自動更新開始
+            startAutoRefresh() {
+                // 既存のタイマーをクリア
+                if (this.refreshTimer) {
+                    clearInterval(this.refreshTimer);
+                }
+                
+                // 新しいタイマーを設定
+                this.refreshTimer = setInterval(() => {
+                    this.fetchData();
+                }, this.settings.refreshInterval * 1000);
+                
+                this.log(`自動更新開始: ${this.settings.refreshInterval}秒間隔`);
+            },
+
+            // 設定モーダル開く
+            openSettings() {
+                document.getElementById('settingsModal').style.display = 'block';
+                
+                // 現在の設定を反映
+                document.getElementById('refreshInterval').value = this.settings.refreshInterval;
+                document.getElementById('refreshValue').textContent = `${this.settings.refreshInterval}秒`;
+                document.getElementById('soundEnabled').checked = this.settings.soundEnabled;
+                document.getElementById('notificationEnabled').checked = this.settings.notificationEnabled;
+                document.getElementById('debugMode').checked = this.settings.debugMode;
+                document.getElementById('demoMode').checked = this.settings.demoMode;
+            },
+
+            // 設定モーダル閉じる
+            closeSettings() {
+                document.getElementById('settingsModal').style.display = 'none';
+            },
+
+            // デバッグログ
+            log(message, type = 'info') {
+                const timestamp = new Date().toLocaleTimeString('ja-JP');
+                const logMessage = `[${timestamp}] ${message}`;
+                
+                console.log(logMessage);
+                
+                if (this.settings.debugMode) {
+                    const debugPanel = document.getElementById('debugPanel');
+                    const logEntry = document.createElement('div');
+                    logEntry.style.color = type === 'error' ? '#ff4757' : (type === 'warn' ? '#ffc107' : '#0f0');
+                    logEntry.textContent = logMessage;
+                    debugPanel.appendChild(logEntry);
+                    debugPanel.scrollTop = debugPanel.scrollHeight;
+                }
+            }
+        };
+
+        // アプリケーション開始
+        document.addEventListener('DOMContentLoaded', () => {
+            app.init();
+        });
+
+        // モーダル外クリックで閉じる
+        window.onclick = (event) => {
+            const modal = document.getElementById('settingsModal');
+            if (event.target === modal) {
+                app.closeSettings();
+            }
+        };
+    </script>
+</body>
+</html>
