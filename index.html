@@ -398,6 +398,35 @@
             font-weight: 600; box-shadow: 0 0 16px var(--accent-glow);
         }
 
+        /* ====== Watchlist ====== */
+        .watchlist-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+        .watchlist-item {
+            background: rgba(255,255,255,0.04); border: 1px solid var(--border-card); border-radius: 12px;
+            padding: 14px; position: relative; transition: all 0.25s;
+        }
+        .watchlist-item:hover { background: rgba(255,255,255,0.07); border-color: var(--border-glow); }
+        .wl-ticker { font-size: 15px; font-weight: 700; color: var(--text-primary); letter-spacing: 0.5px; }
+        .wl-name { font-size: 11px; color: var(--text-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .wl-price { font-size: 18px; font-weight: 700; color: var(--text-primary); margin-top: 6px; }
+        .wl-change { font-size: 13px; font-weight: 600; margin-top: 2px; }
+        .wl-change.positive { color: var(--green); }
+        .wl-change.negative { color: var(--red); }
+        .wl-remove {
+            position: absolute; top: 8px; right: 8px; background: none; border: none;
+            color: var(--text-muted); cursor: pointer; font-size: 16px; line-height: 1; padding: 4px;
+            opacity: 0; transition: opacity 0.2s;
+        }
+        .watchlist-item:hover .wl-remove { opacity: 1; }
+        .wl-remove:hover { color: var(--red); }
+        .wl-loading { color: var(--text-muted); font-size: 12px; margin-top: 8px; }
+        .add-ticker-btn {
+            background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.2); color: var(--accent);
+            padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 600;
+            cursor: pointer; font-family: inherit; transition: all 0.25s;
+        }
+        .add-ticker-btn:hover { background: rgba(0,212,255,0.2); border-color: var(--accent); }
+        @media (max-width: 480px) { .watchlist-grid { grid-template-columns: repeat(2, 1fr); } }
+
         /* ====== Settings modal ====== */
         .modal {
             display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
@@ -616,6 +645,35 @@
         </div>
     </div>
 
+        <!-- Watchlist -->
+        <div class="glass-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                <h2 class="section-title" style="margin:0">Watchlist</h2>
+                <button class="add-ticker-btn" onclick="app.openAddTicker()">+ Add</button>
+            </div>
+            <div id="watchlistGrid" class="watchlist-grid">
+                <div class="skeleton" style="height:60px;border-radius:10px"></div>
+                <div class="skeleton" style="height:60px;border-radius:10px"></div>
+                <div class="skeleton" style="height:60px;border-radius:10px"></div>
+            </div>
+        </div>
+
+        <!-- Add ticker modal -->
+        <div class="modal" id="addTickerModal">
+            <div class="modal-content" style="max-width:380px">
+                <div class="modal-header">
+                    <h2>Add Ticker</h2>
+                    <button class="close-btn" onclick="app.closeAddTicker()">&times;</button>
+                </div>
+                <div style="padding:0 0 8px">
+                    <input type="text" id="tickerInput" placeholder="e.g. AAPL, 7203.T, TSLA" style="width:100%;padding:12px 14px;background:rgba(255,255,255,0.06);border:1px solid var(--border-card);border-radius:8px;color:#fff;font-size:15px;font-family:Inter,sans-serif;outline:none" autocomplete="off" spellcheck="false">
+                    <div id="tickerError" style="color:var(--red);font-size:12px;margin-top:6px;display:none"></div>
+                    <button id="addTickerConfirm" onclick="app.addTicker()" style="width:100%;margin-top:12px;padding:12px;background:var(--accent);color:#000;border:none;border-radius:8px;font-weight:600;font-size:14px;cursor:pointer;font-family:Inter,sans-serif">Add to Watchlist</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="debug-panel" id="debugPanel"></div>
 
     <!-- Settings modal -->
@@ -777,6 +835,11 @@
         currentMood: 'calm',
         chart: null, chartPeriod: '1d', refreshTimer: null,
 
+        // Watchlist
+        defaultTickers: ['AAPL', 'NVDA', 'MSFT', 'GOOGL', 'AMZN', 'META', 'TSLA', 'AVGO'],
+        watchlist: [],
+        watchlistData: {},
+
         // Detect if running on Vercel (or any http server) vs local file
         isHosted: location.protocol === 'https:' || (location.protocol === 'http:' && location.hostname !== ''),
         corsProxies: [
@@ -792,10 +855,12 @@
             ToastManager.init();
             this.setupEventListeners();
             if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
+            this.loadWatchlist();
             this.fetchData();
             this.startAutoRefresh();
             this.initChart();
             this.fetchChartData();
+            this.fetchWatchlistData();
             this.updateMarketStatus();
             // PWA
             if ('serviceWorker' in navigator) {
@@ -883,6 +948,8 @@
                     if (this.data.currentPrice) { this.updateUI(); this.checkAlerts(); this.updateScoreboard(); }
                 });
             });
+
+            $('tickerInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') app.addTicker(); });
 
             document.querySelectorAll('.time-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
@@ -1398,6 +1465,11 @@
             NumberAnimator.animate($('year5High'), this.data.year5High);
             this.updateRule5(); this.update5YDiff(); this.updateScoreboard(); this.updateMood();
 
+            // Demo watchlist data
+            const demoStocks = { AAPL:{price:189.45,prevClose:191.20,name:'Apple Inc.'},NVDA:{price:875.30,prevClose:862.10,name:'NVIDIA Corp'},MSFT:{price:415.60,prevClose:418.30,name:'Microsoft Corp'},GOOGL:{price:174.80,prevClose:172.50,name:'Alphabet Inc'},AMZN:{price:198.25,prevClose:195.80,name:'Amazon.com Inc'},META:{price:502.30,prevClose:498.60,name:'Meta Platforms'},TSLA:{price:245.70,prevClose:252.40,name:'Tesla Inc'},AVGO:{price:1685.20,prevClose:1672.50,name:'Broadcom Inc'} };
+            this.watchlist.forEach(t => { const s = demoStocks[t]; if (s) { const ch = s.price - s.prevClose; this.watchlistData[t] = { price:s.price, prevClose:s.prevClose, change:ch, changePct:(ch/s.prevClose)*100, currency:'USD', name:s.name, exchange:'NMS' }; } });
+            this.renderWatchlist();
+
             const labels = [], prices = [];
             let p = 430;
             for (let i = 0; i < 50; i++) {
@@ -1410,11 +1482,111 @@
 
         startAutoRefresh() {
             if (this.refreshTimer) clearInterval(this.refreshTimer);
-            this.refreshTimer = setInterval(() => { if (!this.settings.demoMode) this.fetchData(); }, this.settings.refreshInterval * 1000);
+            this.refreshTimer = setInterval(() => { if (!this.settings.demoMode) { this.fetchData(); this.fetchWatchlistData(); } }, this.settings.refreshInterval * 1000);
         },
 
         openSettings() { $('settingsModal').classList.add('open'); },
         closeSettings() { $('settingsModal').classList.remove('open'); },
+
+        // ---- Watchlist ----
+        loadWatchlist() {
+            try {
+                const saved = localStorage.getItem('qqq_watchlist');
+                this.watchlist = saved ? JSON.parse(saved) : [...this.defaultTickers];
+            } catch { this.watchlist = [...this.defaultTickers]; }
+        },
+
+        saveWatchlist() {
+            try { localStorage.setItem('qqq_watchlist', JSON.stringify(this.watchlist)); } catch {}
+        },
+
+        async fetchWatchlistData() {
+            if (!this.watchlist.length) { this.renderWatchlist(); return; }
+            this.log(`Fetching watchlist: ${this.watchlist.join(', ')}`);
+            const results = await Promise.allSettled(
+                this.watchlist.map(ticker => this.fetchWithProxy(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}`))
+            );
+            results.forEach((r, i) => {
+                const ticker = this.watchlist[i];
+                if (r.status === 'fulfilled' && r.value?.chart?.result?.[0]) {
+                    const m = r.value.chart.result[0].meta;
+                    const ch = m.regularMarketPrice - m.previousClose;
+                    this.watchlistData[ticker] = {
+                        price: m.regularMarketPrice,
+                        prevClose: m.previousClose,
+                        change: ch,
+                        changePct: (ch / m.previousClose) * 100,
+                        currency: m.currency || 'USD',
+                        name: m.shortName || m.symbol || ticker,
+                        exchange: m.exchangeName || ''
+                    };
+                }
+            });
+            this.renderWatchlist();
+        },
+
+        renderWatchlist() {
+            const grid = $('watchlistGrid');
+            if (!this.watchlist.length) {
+                grid.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:16px;text-align:center">No tickers added. Click + Add to start.</div>';
+                return;
+            }
+            grid.innerHTML = this.watchlist.map(ticker => {
+                const d = this.watchlistData[ticker];
+                if (!d) return `<div class="watchlist-item"><div class="wl-ticker">${ticker}</div><div class="wl-loading">Loading...</div><button class="wl-remove" onclick="app.removeTicker('${ticker}')">&times;</button></div>`;
+                const sign = d.change >= 0 ? '+' : '';
+                const cls = d.change >= 0 ? 'positive' : 'negative';
+                const sym = d.currency === 'JPY' ? '¥' : '$';
+                const dec = d.price > 1000 ? 0 : 2;
+                return `<div class="watchlist-item">
+                    <button class="wl-remove" onclick="app.removeTicker('${ticker}')">&times;</button>
+                    <div class="wl-ticker">${ticker}</div>
+                    <div class="wl-name">${d.name}</div>
+                    <div class="wl-price">${sym}${d.price.toFixed(dec)}</div>
+                    <div class="wl-change ${cls}">${sign}${d.change.toFixed(dec)} (${sign}${d.changePct.toFixed(2)}%)</div>
+                </div>`;
+            }).join('');
+        },
+
+        openAddTicker() { $('addTickerModal').classList.add('open'); $('tickerInput').value = ''; $('tickerError').style.display = 'none'; setTimeout(() => $('tickerInput').focus(), 100); },
+        closeAddTicker() { $('addTickerModal').classList.remove('open'); },
+
+        async addTicker() {
+            const input = $('tickerInput').value.trim().toUpperCase();
+            if (!input) return;
+            if (this.watchlist.includes(input)) { $('tickerError').textContent = `${input} is already in watchlist`; $('tickerError').style.display = 'block'; return; }
+
+            $('addTickerConfirm').textContent = 'Checking...'; $('addTickerConfirm').disabled = true;
+            try {
+                const data = await this.fetchWithProxy(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(input)}`);
+                if (!data?.chart?.result?.[0]) throw new Error('Not found');
+                const m = data.chart.result[0].meta;
+                const ch = m.regularMarketPrice - m.previousClose;
+                this.watchlistData[input] = {
+                    price: m.regularMarketPrice, prevClose: m.previousClose,
+                    change: ch, changePct: (ch / m.previousClose) * 100,
+                    currency: m.currency || 'USD', name: m.shortName || m.symbol || input,
+                    exchange: m.exchangeName || ''
+                };
+                this.watchlist.push(input);
+                this.saveWatchlist();
+                this.renderWatchlist();
+                this.closeAddTicker();
+                ToastManager.show(`${input} added to watchlist`, 'info');
+            } catch (e) {
+                $('tickerError').textContent = `"${input}" not found. Check the ticker symbol.`;
+                $('tickerError').style.display = 'block';
+            }
+            $('addTickerConfirm').textContent = 'Add to Watchlist'; $('addTickerConfirm').disabled = false;
+        },
+
+        removeTicker(ticker) {
+            this.watchlist = this.watchlist.filter(t => t !== ticker);
+            delete this.watchlistData[ticker];
+            this.saveWatchlist();
+            this.renderWatchlist();
+            ToastManager.show(`${ticker} removed`, 'info');
+        },
 
         log(msg, type = 'info') {
             const m = `[${new Date().toLocaleTimeString('en-US')}] ${msg}`;
