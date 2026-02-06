@@ -633,6 +633,18 @@
                 <div class="skeleton" style="height:85px;border-radius:10px"></div>
                 <div class="skeleton" style="height:85px;border-radius:10px"></div>
             </div>
+            <!-- Crypto Heatmap (separate section) -->
+            <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border-card)">
+                <h2 class="section-title" style="margin:0 0 12px 0">
+                    <span style="font-size:16px">₿</span> Crypto
+                </h2>
+                <div id="cryptoGrid" class="watchlist-grid heatmap-view" style="grid-template-columns:repeat(3,1fr)">
+                    <div class="skeleton" style="height:85px;border-radius:10px"></div>
+                    <div class="skeleton" style="height:85px;border-radius:10px"></div>
+                    <div class="skeleton" style="height:85px;border-radius:10px"></div>
+                </div>
+            </div>
+
             <!-- Ticker detail panel (shown on click) -->
             <div class="ticker-detail" id="tickerDetail" style="display:none">
                 <div class="ticker-detail-header">
@@ -948,6 +960,14 @@
         watchlistData: {},
         watchlistView: 'heatmap', // 'list' or 'heatmap'
 
+        // Crypto
+        cryptoTickers: [
+            { symbol: 'BTC-USD', label: 'BTC', name: 'Bitcoin' },
+            { symbol: 'ETH-USD', label: 'ETH', name: 'Ethereum' },
+            { symbol: 'XRP-USD', label: 'XRP', name: 'XRP' }
+        ],
+        cryptoData: {},
+
         // Detect if running on Vercel (or any http server) vs local file
         isHosted: location.protocol === 'https:' || (location.protocol === 'http:' && location.hostname !== ''),
         corsProxies: [
@@ -969,6 +989,7 @@
             this.initChart();
             this.fetchChartData();
             this.fetchWatchlistData();
+            this.fetchCryptoData();
             this.updateMarketStatus();
             // PWA
             if ('serviceWorker' in navigator) {
@@ -1578,6 +1599,14 @@
             this.watchlist.forEach(t => { const s = demoStocks[t]; if (s) { const ch = s.price - s.prevClose; this.watchlistData[t] = { price:s.price, prevClose:s.prevClose, change:ch, changePct:(ch/s.prevClose)*100, currency:'USD', name:s.name, exchange:'NMS' }; } });
             this.renderWatchlist();
 
+            // Demo crypto data
+            this.cryptoData = {
+                'BTC-USD': { price: 97842.50, prevClose: 96500.00, change: 1342.50, changePct: 1.39, label: 'BTC', name: 'Bitcoin' },
+                'ETH-USD': { price: 3285.40, prevClose: 3320.10, change: -34.70, changePct: -1.05, label: 'ETH', name: 'Ethereum' },
+                'XRP-USD': { price: 2.48, prevClose: 2.42, change: 0.06, changePct: 2.48, label: 'XRP', name: 'XRP' }
+            };
+            this.renderCryptoHeatmap();
+
             const labels = [], prices = [];
             let p = 430;
             for (let i = 0; i < 50; i++) {
@@ -1590,7 +1619,7 @@
 
         startAutoRefresh() {
             if (this.refreshTimer) clearInterval(this.refreshTimer);
-            this.refreshTimer = setInterval(() => { if (!this.settings.demoMode) { this.fetchData(); this.fetchWatchlistData(); } }, this.settings.refreshInterval * 1000);
+            this.refreshTimer = setInterval(() => { if (!this.settings.demoMode) { this.fetchData(); this.fetchWatchlistData(); this.fetchCryptoData(); } }, this.settings.refreshInterval * 1000);
         },
 
         openSettings() { $('settingsModal').classList.add('open'); },
@@ -1705,15 +1734,15 @@
 
         async showTickerDetail(ticker) {
             const panel = $('tickerDetail');
-            const d = this.watchlistData[ticker];
+            const d = this.watchlistData[ticker] || this.cryptoData[ticker];
             if (!d) return;
 
-            const sym = d.currency === 'JPY' ? '¥' : '$';
-            const dec = d.price > 1000 ? 0 : 2;
+            const sym = (d.currency && d.currency === 'JPY') ? '¥' : '$';
+            const dec = d.price > 1000 ? 0 : d.price < 1 ? 4 : 2;
             const sign = d.change >= 0 ? '+' : '';
             const cls = d.change >= 0 ? 'positive' : 'negative';
 
-            $('tdTicker').textContent = ticker;
+            $('tdTicker').textContent = d.label || ticker;
             $('tdName').textContent = d.name;
             $('tdPrice').textContent = `${sym}${d.price.toFixed(dec)}`;
             const chEl = $('tdChange');
@@ -1808,6 +1837,46 @@
             this.saveWatchlist();
             this.renderWatchlist();
             ToastManager.show(`${ticker} removed`, 'info');
+        },
+
+        // ---- Crypto ----
+        async fetchCryptoData() {
+            this.log('Fetching crypto data');
+            const results = await Promise.allSettled(
+                this.cryptoTickers.map(c => this.fetchWithProxy(`https://query1.finance.yahoo.com/v8/finance/chart/${c.symbol}`))
+            );
+            results.forEach((r, i) => {
+                const c = this.cryptoTickers[i];
+                if (r.status === 'fulfilled' && r.value?.chart?.result?.[0]) {
+                    const m = r.value.chart.result[0].meta;
+                    const ch = m.regularMarketPrice - m.previousClose;
+                    this.cryptoData[c.symbol] = {
+                        price: m.regularMarketPrice,
+                        prevClose: m.previousClose,
+                        change: ch,
+                        changePct: (ch / m.previousClose) * 100,
+                        label: c.label,
+                        name: c.name
+                    };
+                }
+            });
+            this.renderCryptoHeatmap();
+        },
+
+        renderCryptoHeatmap() {
+            const grid = $('cryptoGrid');
+            grid.innerHTML = this.cryptoTickers.map(c => {
+                const d = this.cryptoData[c.symbol];
+                if (!d) return `<div class="heatmap-cell" style="background:rgba(255,255,255,0.05)"><div class="hm-ticker">${c.label}</div><div class="hm-price" style="opacity:0.5">Loading...</div></div>`;
+                const sign = d.changePct >= 0 ? '+' : '';
+                const bg = this.heatmapColor(d.changePct);
+                const priceStr = d.price >= 1000 ? '$' + d.price.toLocaleString('en-US', { maximumFractionDigits: 0 }) : d.price >= 1 ? '$' + d.price.toFixed(2) : '$' + d.price.toFixed(4);
+                return `<div class="heatmap-cell" style="background:${bg};cursor:pointer" onclick="app.showTickerDetail('${c.symbol}')">
+                    <div class="hm-ticker">${c.label}</div>
+                    <div class="hm-pct">${sign}${d.changePct.toFixed(2)}%</div>
+                    <div class="hm-price">${priceStr}</div>
+                </div>`;
+            }).join('');
         },
 
         log(msg, type = 'info') {
