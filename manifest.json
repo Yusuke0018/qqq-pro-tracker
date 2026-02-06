@@ -1,0 +1,24 @@
+{
+  "name": "QQQ Pro Tracker",
+  "short_name": "QQQ Tracker",
+  "description": "Real-time QQQ investment opportunity monitor",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#0a0e1a",
+  "theme_color": "#00d4ff",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3e%3crect width='512' height='512' rx='96' fill='%230a0e1a'/%3e%3cpath d='M96 352L192 256L288 320L416 192' stroke='%2300d4ff' stroke-width='28' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3e%3ccircle cx='416' cy='192' r='24' fill='%2300d4ff'/%3e%3c/svg%3e",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3e%3crect width='192' height='192' rx='36' fill='%230a0e1a'/%3e%3cpath d='M36 132L72 96L108 120L156 72' stroke='%2300d4ff' stroke-width='10' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3e%3ccircle cx='156' cy='72' r='9' fill='%2300d4ff'/%3e%3c/svg%3e",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
