@@ -452,6 +452,35 @@
             .hm-ticker { font-size: 11px; } .hm-pct { font-size: 16px; }
         }
 
+        /* ====== Ticker Detail Panel ====== */
+        .ticker-detail {
+            margin-top: 16px; padding: 16px; border-top: 1px solid var(--border-card);
+            animation: slideDown 0.25s ease-out;
+        }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+        .ticker-detail-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .td-ticker { font-size: 20px; font-weight: 800; color: var(--text-primary); margin-right: 8px; }
+        .td-name { font-size: 13px; color: var(--text-muted); }
+        .td-price-row { display: flex; align-items: baseline; gap: 12px; margin-bottom: 14px; }
+        .td-price { font-size: 24px; font-weight: 700; color: var(--text-primary); }
+        .td-change { font-size: 15px; font-weight: 600; }
+        .td-change.positive { color: var(--green); }
+        .td-change.negative { color: var(--red); }
+        .td-perf-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .td-perf-item {
+            background: rgba(255,255,255,0.04); border-radius: 10px; padding: 12px 10px; text-align: center;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        .td-perf-label { font-size: 11px; color: var(--text-muted); margin-bottom: 6px; font-weight: 500; }
+        .td-perf-value { font-size: 17px; font-weight: 700; }
+        .td-perf-value.positive { color: var(--green); }
+        .td-perf-value.negative { color: var(--red); }
+        .td-perf-value.neutral { color: var(--text-muted); }
+        @media (max-width: 480px) {
+            .td-perf-grid { grid-template-columns: repeat(2, 1fr); }
+            .td-price { font-size: 20px; }
+        }
+
         /* ====== Settings modal ====== */
         .modal {
             display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
@@ -568,6 +597,46 @@
     <div class="main-content">
         <div class="market-status" id="marketStatus">Checking market status...</div>
 
+        <!-- Watchlist / Heatmap (TOP) -->
+        <div class="glass-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+                <h2 class="section-title" style="margin:0">Watchlist</h2>
+                <div class="watchlist-header-right">
+                    <div class="view-toggle">
+                        <button class="view-toggle-btn" data-view="list" onclick="app.setWatchlistView('list')">List</button>
+                        <button class="view-toggle-btn active" data-view="heatmap" onclick="app.setWatchlistView('heatmap')">Heatmap</button>
+                    </div>
+                    <button class="add-ticker-btn" onclick="app.openAddTicker()">+ Add</button>
+                </div>
+            </div>
+            <div id="watchlistGrid" class="watchlist-grid heatmap-view">
+                <div class="skeleton" style="height:85px;border-radius:10px"></div>
+                <div class="skeleton" style="height:85px;border-radius:10px"></div>
+                <div class="skeleton" style="height:85px;border-radius:10px"></div>
+                <div class="skeleton" style="height:85px;border-radius:10px"></div>
+            </div>
+            <!-- Ticker detail panel (shown on click) -->
+            <div class="ticker-detail" id="tickerDetail" style="display:none">
+                <div class="ticker-detail-header">
+                    <div>
+                        <span class="td-ticker" id="tdTicker"></span>
+                        <span class="td-name" id="tdName"></span>
+                    </div>
+                    <button class="close-btn" onclick="app.closeTickerDetail()" style="font-size:20px">&times;</button>
+                </div>
+                <div class="td-price-row">
+                    <span class="td-price" id="tdPrice"></span>
+                    <span class="td-change" id="tdChange"></span>
+                </div>
+                <div class="td-perf-grid" id="tdPerfGrid">
+                    <div class="td-perf-item"><div class="td-perf-label">1 Week</div><div class="td-perf-value" id="tdPerf1w"><span class="skeleton skeleton-text" style="width:60px"></span></div></div>
+                    <div class="td-perf-item"><div class="td-perf-label">1 Month</div><div class="td-perf-value" id="tdPerf1m"><span class="skeleton skeleton-text" style="width:60px"></span></div></div>
+                    <div class="td-perf-item"><div class="td-perf-label">YTD</div><div class="td-perf-value" id="tdPerfYtd"><span class="skeleton skeleton-text" style="width:60px"></span></div></div>
+                    <div class="td-perf-item"><div class="td-perf-label">1 Year</div><div class="td-perf-value" id="tdPerf1y"><span class="skeleton skeleton-text" style="width:60px"></span></div></div>
+                </div>
+            </div>
+        </div>
+
         <!-- ====== Signal Scoreboard ====== -->
         <div class="glass-card">
             <h2 class="section-title">Buy Signal Scoreboard</h2>
@@ -667,27 +736,6 @@
                 <button class="time-btn" data-period="1y">1Y</button>
             </div>
             <div class="chart-container" id="chartContainer"><canvas id="priceChart"></canvas></div>
-        </div>
-    </div>
-
-        <!-- Watchlist / Heatmap -->
-        <div class="glass-card">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-                <h2 class="section-title" style="margin:0">Watchlist</h2>
-                <div class="watchlist-header-right">
-                    <div class="view-toggle">
-                        <button class="view-toggle-btn" data-view="list" onclick="app.setWatchlistView('list')">List</button>
-                        <button class="view-toggle-btn active" data-view="heatmap" onclick="app.setWatchlistView('heatmap')">Heatmap</button>
-                    </div>
-                    <button class="add-ticker-btn" onclick="app.openAddTicker()">+ Add</button>
-                </div>
-            </div>
-            <div id="watchlistGrid" class="watchlist-grid heatmap-view">
-                <div class="skeleton" style="height:85px;border-radius:10px"></div>
-                <div class="skeleton" style="height:85px;border-radius:10px"></div>
-                <div class="skeleton" style="height:85px;border-radius:10px"></div>
-                <div class="skeleton" style="height:85px;border-radius:10px"></div>
-            </div>
         </div>
 
         <!-- Add ticker modal -->
@@ -1597,13 +1645,13 @@
             if (this.watchlistView === 'heatmap') {
                 grid.innerHTML = this.watchlist.map(ticker => {
                     const d = this.watchlistData[ticker];
-                    if (!d) return `<div class="heatmap-cell" style="background:rgba(255,255,255,0.05)"><div class="hm-ticker">${ticker}</div><div class="hm-price" style="opacity:0.5">Loading...</div><button class="wl-remove" onclick="app.removeTicker('${ticker}')">&times;</button></div>`;
+                    if (!d) return `<div class="heatmap-cell" style="background:rgba(255,255,255,0.05)"><div class="hm-ticker">${ticker}</div><div class="hm-price" style="opacity:0.5">Loading...</div><button class="wl-remove" onclick="event.stopPropagation();app.removeTicker('${ticker}')">&times;</button></div>`;
                     const sign = d.changePct >= 0 ? '+' : '';
                     const bg = this.heatmapColor(d.changePct);
                     const sym = d.currency === 'JPY' ? '¥' : '$';
                     const dec = d.price > 1000 ? 0 : 2;
-                    return `<div class="heatmap-cell" style="background:${bg}">
-                        <button class="wl-remove" onclick="app.removeTicker('${ticker}')">&times;</button>
+                    return `<div class="heatmap-cell" style="background:${bg};cursor:pointer" onclick="app.showTickerDetail('${ticker}')">
+                        <button class="wl-remove" onclick="event.stopPropagation();app.removeTicker('${ticker}')">&times;</button>
                         <div class="hm-ticker">${ticker}</div>
                         <div class="hm-pct">${sign}${d.changePct.toFixed(2)}%</div>
                         <div class="hm-price">${sym}${d.price.toFixed(dec)}</div>
@@ -1612,13 +1660,13 @@
             } else {
                 grid.innerHTML = this.watchlist.map(ticker => {
                     const d = this.watchlistData[ticker];
-                    if (!d) return `<div class="watchlist-item"><div class="wl-ticker">${ticker}</div><div class="wl-loading">Loading...</div><button class="wl-remove" onclick="app.removeTicker('${ticker}')">&times;</button></div>`;
+                    if (!d) return `<div class="watchlist-item"><div class="wl-ticker">${ticker}</div><div class="wl-loading">Loading...</div><button class="wl-remove" onclick="event.stopPropagation();app.removeTicker('${ticker}')">&times;</button></div>`;
                     const sign = d.change >= 0 ? '+' : '';
                     const cls = d.change >= 0 ? 'positive' : 'negative';
                     const sym = d.currency === 'JPY' ? '¥' : '$';
                     const dec = d.price > 1000 ? 0 : 2;
-                    return `<div class="watchlist-item">
-                        <button class="wl-remove" onclick="app.removeTicker('${ticker}')">&times;</button>
+                    return `<div class="watchlist-item" style="cursor:pointer" onclick="app.showTickerDetail('${ticker}')">
+                        <button class="wl-remove" onclick="event.stopPropagation();app.removeTicker('${ticker}')">&times;</button>
                         <div class="wl-ticker">${ticker}</div>
                         <div class="wl-name">${d.name}</div>
                         <div class="wl-price">${sym}${d.price.toFixed(dec)}</div>
@@ -1626,6 +1674,73 @@
                     </div>`;
                 }).join('');
             }
+        },
+
+        async showTickerDetail(ticker) {
+            const panel = $('tickerDetail');
+            const d = this.watchlistData[ticker];
+            if (!d) return;
+
+            const sym = d.currency === 'JPY' ? '¥' : '$';
+            const dec = d.price > 1000 ? 0 : 2;
+            const sign = d.change >= 0 ? '+' : '';
+            const cls = d.change >= 0 ? 'positive' : 'negative';
+
+            $('tdTicker').textContent = ticker;
+            $('tdName').textContent = d.name;
+            $('tdPrice').textContent = `${sym}${d.price.toFixed(dec)}`;
+            const chEl = $('tdChange');
+            chEl.textContent = `${sign}${d.change.toFixed(dec)} (${sign}${d.changePct.toFixed(2)}%)`;
+            chEl.className = `td-change ${cls}`;
+
+            // Reset perf values to loading
+            ['tdPerf1w', 'tdPerf1m', 'tdPerfYtd', 'tdPerf1y'].forEach(id => {
+                $(id).innerHTML = '<span class="skeleton skeleton-text" style="width:60px;display:inline-block"></span>';
+                $(id).className = 'td-perf-value';
+            });
+
+            panel.style.display = 'block';
+            panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            // Fetch period data in parallel
+            const now = Math.floor(Date.now() / 1000);
+            const jan1 = Math.floor(new Date(new Date().getFullYear(), 0, 1).getTime() / 1000);
+            const periods = [
+                { id: 'tdPerf1w', start: now - 7 * 86400, label: '1w' },
+                { id: 'tdPerf1m', start: now - 30 * 86400, label: '1m' },
+                { id: 'tdPerfYtd', start: jan1, label: 'ytd' },
+                { id: 'tdPerf1y', start: now - 365 * 86400, label: '1y' }
+            ];
+
+            const results = await Promise.allSettled(
+                periods.map(p => this.fetchWithProxy(
+                    `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?period1=${p.start}&period2=${now}&interval=1d`
+                ))
+            );
+
+            results.forEach((r, i) => {
+                const el = $(periods[i].id);
+                if (r.status === 'fulfilled' && r.value?.chart?.result?.[0]) {
+                    const opens = r.value.chart.result[0].indicators.quote[0].open;
+                    const firstOpen = opens.find(v => v !== null);
+                    if (firstOpen && d.price) {
+                        const pct = ((d.price - firstOpen) / firstOpen) * 100;
+                        const s = pct >= 0 ? '+' : '';
+                        el.textContent = `${s}${pct.toFixed(2)}%`;
+                        el.className = `td-perf-value ${pct >= 0 ? 'positive' : 'negative'}`;
+                    } else {
+                        el.textContent = '---';
+                        el.className = 'td-perf-value neutral';
+                    }
+                } else {
+                    el.textContent = '---';
+                    el.className = 'td-perf-value neutral';
+                }
+            });
+        },
+
+        closeTickerDetail() {
+            $('tickerDetail').style.display = 'none';
         },
 
         openAddTicker() { $('addTickerModal').classList.add('open'); $('tickerInput').value = ''; $('tickerError').style.display = 'none'; setTimeout(() => $('tickerInput').focus(), 100); },
