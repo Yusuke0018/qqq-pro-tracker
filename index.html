@@ -452,6 +452,24 @@
             .hm-ticker { font-size: 11px; } .hm-pct { font-size: 16px; }
         }
 
+        /* ====== Top Bar (QQQ / USD/JPY / NQ / VIX) ====== */
+        .top-bar-card { padding: 16px 20px; }
+        .top-bar {
+            display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;
+        }
+        .top-bar-item { text-align: center; flex: 1; min-width: 70px; }
+        .top-bar-label { font-size: 11px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 4px; }
+        .top-bar-price { font-size: 22px; font-weight: 800; color: var(--text-primary); line-height: 1.2; }
+        .top-bar-change-row { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 3px; font-size: 13px; }
+        .top-bar-divider { width: 1px; height: 50px; background: var(--border-card); flex-shrink: 0; }
+        .price-details.collapsed { display: none; }
+        @media (max-width: 480px) {
+            .top-bar { gap: 4px; }
+            .top-bar-price { font-size: 17px; }
+            .top-bar-change-row { font-size: 11px; }
+            .top-bar-divider { height: 40px; }
+        }
+
         /* ====== Ticker Detail Panel ====== */
         .ticker-detail {
             margin-top: 16px; padding: 16px; border-top: 1px solid var(--border-card);
@@ -637,37 +655,48 @@
             </div>
         </div>
 
-        <!-- ====== Signal Scoreboard ====== -->
-        <div class="glass-card">
-            <h2 class="section-title">Buy Signal Scoreboard</h2>
-            <div class="scoreboard">
-                <div class="score-ring-wrap">
-                    <div class="score-ring">
-                        <svg viewBox="0 0 80 80" width="80" height="80">
-                            <circle class="score-ring-bg" cx="40" cy="40" r="34"/>
-                            <circle class="score-ring-fill" id="scoreRing" cx="40" cy="40" r="34"
-                                stroke-dasharray="213.6" stroke-dashoffset="213.6"/>
-                        </svg>
-                        <div class="score-number" id="scoreNumber">0/6</div>
-                    </div>
-                    <div>
-                        <div class="score-label">Signal Strength</div>
-                        <div class="score-desc" id="scoreDesc">Waiting...</div>
+        <!-- QQQ + USD/JPY quick bar -->
+        <div class="glass-card top-bar-card">
+            <div class="top-bar">
+                <div class="top-bar-item">
+                    <div class="top-bar-label">QQQ</div>
+                    <div class="top-bar-price" id="currentPrice"><span class="skeleton skeleton-text" style="width:80px"></span></div>
+                    <div class="top-bar-change-row">
+                        <span class="change-amount" id="changeAmount"><span class="skeleton skeleton-text" style="width:50px"></span></span>
+                        <span class="change-percent" id="changePercent"><span class="skeleton skeleton-text" style="width:50px"></span></span>
                     </div>
                 </div>
-                <div class="signal-pills" id="signalPills"></div>
+                <div class="top-bar-divider"></div>
+                <div class="top-bar-item">
+                    <div class="top-bar-label">USD/JPY</div>
+                    <div class="top-bar-price" id="fxPrice"><span class="skeleton skeleton-text" style="width:70px"></span></div>
+                    <div class="top-bar-change-row">
+                        <span class="fx-change" id="fxChange"></span>
+                    </div>
+                </div>
+                <div class="top-bar-divider"></div>
+                <div class="top-bar-item">
+                    <div class="top-bar-label">NQ Futures</div>
+                    <div class="top-bar-price" id="futuresPrice"><span class="skeleton skeleton-text" style="width:80px"></span></div>
+                    <div class="top-bar-change-row">
+                        <span class="futures-change" id="futuresChange"></span>
+                    </div>
+                </div>
+                <div class="top-bar-divider"></div>
+                <div class="top-bar-item">
+                    <div class="top-bar-label">VIX</div>
+                    <div class="top-bar-price" id="vixValue"><span class="skeleton skeleton-text" style="width:50px"></span></div>
+                    <div class="top-bar-change-row">
+                        <span class="vix-change" id="vixChange"></span>
+                        <span class="vix-status" id="vixStatus" style="font-size:11px"></span>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Price section -->
+        <!-- Price details (collapsible) -->
         <div class="glass-card">
-            <div class="price-main">
-                <div class="current-price" id="currentPrice"><span class="skeleton skeleton-lg"></span></div>
-                <div class="price-change">
-                    <div class="change-amount" id="changeAmount"><span class="skeleton skeleton-text"></span></div>
-                    <div class="change-percent" id="changePercent"><span class="skeleton skeleton-text" style="width:60px"></span></div>
-                </div>
-            </div>
+            <h2 class="section-title" style="cursor:pointer" onclick="this.parentElement.querySelector('.price-details').classList.toggle('collapsed')">QQQ Details <span style="font-size:12px;color:var(--text-muted)">&#9660;</span></h2>
             <div class="price-details">
                 <div class="detail-item"><div class="detail-label">Prev Close</div><div class="detail-value" id="prevClose"><span class="skeleton skeleton-text"></span></div></div>
                 <div class="detail-item"><div class="detail-label">Volume</div><div class="detail-value" id="volume"><span class="skeleton skeleton-text"></span></div></div>
@@ -693,34 +722,32 @@
             </div>
         </div>
 
-        <!-- Market indicators -->
+        <!-- VIX gauge -->
         <div class="glass-card">
-            <h2 class="section-title">Market Indicators</h2>
-            <div class="vix-container">
-                <div class="detail-label">VIX (Fear Index)</div>
-                <div class="vix-header">
-                    <div>
-                        <div class="vix-value-num" id="vixValue"><span class="skeleton skeleton-text" style="width:60px;height:32px"></span></div>
-                        <div class="vix-change" id="vixChange"></div>
+            <h2 class="section-title">VIX Gauge</h2>
+            <div class="vix-gauge"><div class="vix-gauge-fill" id="vixGauge" style="width:0%"></div></div>
+            <div class="vix-gauge-labels"><span>0</span><span>20</span><span>30</span><span>40+</span></div>
+        </div>
+
+        <!-- ====== Signal Scoreboard ====== -->
+        <div class="glass-card">
+            <h2 class="section-title">Buy Signal Scoreboard</h2>
+            <div class="scoreboard">
+                <div class="score-ring-wrap">
+                    <div class="score-ring">
+                        <svg viewBox="0 0 80 80" width="80" height="80">
+                            <circle class="score-ring-bg" cx="40" cy="40" r="34"/>
+                            <circle class="score-ring-fill" id="scoreRing" cx="40" cy="40" r="34"
+                                stroke-dasharray="213.6" stroke-dashoffset="213.6"/>
+                        </svg>
+                        <div class="score-number" id="scoreNumber">0/6</div>
                     </div>
-                    <span class="vix-status" id="vixStatus"></span>
+                    <div>
+                        <div class="score-label">Signal Strength</div>
+                        <div class="score-desc" id="scoreDesc">Waiting...</div>
+                    </div>
                 </div>
-                <div class="vix-gauge"><div class="vix-gauge-fill" id="vixGauge" style="width:0%"></div></div>
-                <div class="vix-gauge-labels"><span>0</span><span>20</span><span>30</span><span>40+</span></div>
-            </div>
-            <div class="futures-container">
-                <div class="detail-label">NQ Futures</div>
-                <div class="futures-row">
-                    <span class="futures-price" id="futuresPrice"><span class="skeleton skeleton-text" style="width:100px;height:24px"></span></span>
-                    <span class="futures-change" id="futuresChange"></span>
-                </div>
-            </div>
-            <div class="fx-container">
-                <div class="detail-label">USD/JPY</div>
-                <div class="fx-row">
-                    <span class="fx-price" id="fxPrice"><span class="skeleton skeleton-text" style="width:80px;height:24px"></span></span>
-                    <span class="fx-change" id="fxChange"></span>
-                </div>
+                <div class="signal-pills" id="signalPills"></div>
             </div>
         </div>
 
