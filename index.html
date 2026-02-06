@@ -4,1530 +4,1591 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>QQQ Pro Tracker</title>
-    <!-- Favicon Links -->
     <link rel="icon" href="data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' width='64' height='64'%3e%3crect width='64' height='64' rx='12' fill='%23111'/%3e%3cpath d='M12 44L24 32L36 40L52 24' stroke='%2300d4ff' stroke-width='4' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3e%3ccircle cx='52' cy='24' r='4' fill='%2300d4ff'/%3e%3c/svg%3e" type="image/svg+xml">
     <link rel="apple-touch-icon" href="data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' width='180' height='180'%3e%3crect width='64' height='64' rx='12' fill='%23111'/%3e%3cpath d='M12 44L24 32L36 40L52 24' stroke='%2300d4ff' stroke-width='4' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3e%3ccircle cx='52' cy='24' r='4' fill='%2300d4ff'/%3e%3c/svg%3e">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-card: rgba(15, 20, 40, 0.6);
+            --bg-card-hover: rgba(20, 28, 55, 0.7);
+            --border-card: rgba(255, 255, 255, 0.08);
+            --border-glow: rgba(0, 212, 255, 0.3);
+            --accent: #00d4ff;
+            --accent-glow: rgba(0, 212, 255, 0.25);
+            --green: #00e68a;
+            --red: #ff4d6a;
+            --yellow: #ffb740;
+            --orange: #ff8c42;
+            --text-primary: #f0f2f5;
+            --text-secondary: rgba(255, 255, 255, 0.55);
+            --text-muted: rgba(255, 255, 255, 0.35);
+            --radius: 16px;
+            --radius-sm: 10px;
+            --blur: 20px;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #000;
-            color: #fff;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
             overflow-x: hidden;
-            padding-bottom: 20px;
+            min-height: 100vh;
         }
 
-        /* ヘッダー */
+        /* Gradient mesh background */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 80% 60% at 10% 20%, rgba(0, 60, 120, 0.35) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 50% at 85% 75%, rgba(30, 0, 80, 0.3) 0%, transparent 55%),
+                radial-gradient(ellipse 50% 40% at 50% 50%, rgba(0, 100, 130, 0.15) 0%, transparent 50%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Skeleton loading */
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        .skeleton {
+            background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s ease-in-out infinite;
+            border-radius: 6px;
+        }
+        .skeleton-text { height: 20px; width: 80px; display: inline-block; vertical-align: middle; }
+        .skeleton-lg { height: 48px; width: 160px; display: inline-block; vertical-align: middle; }
+
+        /* Toast notifications */
+        .toast-container {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+
+        .toast {
+            pointer-events: auto;
+            padding: 14px 20px;
+            border-radius: var(--radius-sm);
+            backdrop-filter: blur(var(--blur));
+            -webkit-backdrop-filter: blur(var(--blur));
+            border: 1px solid var(--border-card);
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 300px;
+            max-width: 420px;
+            transform: translateX(120%);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+        .toast.show { transform: translateX(0); opacity: 1; }
+        .toast-error { background: rgba(255, 77, 106, 0.15); border-color: rgba(255, 77, 106, 0.3); color: var(--red); }
+        .toast-warning { background: rgba(255, 183, 64, 0.15); border-color: rgba(255, 183, 64, 0.3); color: var(--yellow); }
+        .toast-success { background: rgba(0, 230, 138, 0.15); border-color: rgba(0, 230, 138, 0.3); color: var(--green); }
+        .toast-info { background: rgba(0, 212, 255, 0.15); border-color: rgba(0, 212, 255, 0.3); color: var(--accent); }
+
+        /* Demo banner */
+        .demo-banner {
+            display: none;
+            background: linear-gradient(90deg, rgba(255,183,64,0.12), rgba(255,140,66,0.12));
+            border-bottom: 1px solid rgba(255,183,64,0.2);
+            padding: 8px 20px;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--yellow);
+            position: relative;
+            z-index: 10;
+        }
+        .demo-banner.show { display: block; }
+
+        /* Header */
         .header {
-            background: #111;
-            padding: 15px 20px;
+            background: rgba(10, 14, 26, 0.85);
+            backdrop-filter: blur(var(--blur));
+            -webkit-backdrop-filter: blur(var(--blur));
+            padding: 14px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid #333;
+            border-bottom: 1px solid var(--border-card);
             position: sticky;
             top: 0;
             z-index: 100;
         }
 
+        .header-left { display: flex; align-items: center; gap: 14px; }
         .header h1 {
-            font-size: 20px;
-            font-weight: 600;
-            color: #00d4ff;
+            font-size: 18px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent), #6366f1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .last-updated {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 400;
         }
 
         .settings-btn {
-            background: none;
-            border: 1px solid #444;
-            color: #fff;
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-size: 14px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid var(--border-card);
+            color: var(--text-secondary);
+            padding: 8px 16px;
+            border-radius: 24px;
+            font-size: 13px;
+            font-family: inherit;
             cursor: pointer;
             transition: all 0.3s;
         }
+        .settings-btn:hover { background: rgba(255,255,255,0.1); border-color: var(--border-glow); color: var(--accent); }
 
-        .settings-btn:hover {
-            background: #222;
-            border-color: #00d4ff;
-        }
-
-        /* アラートバー */
-        .alert-bar {
-            background: #ff4757;
-            color: #fff;
-            padding: 12px 20px;
-            text-align: center;
-            font-weight: 600;
-            display: none;
-            animation: pulse 1s infinite;
-        }
-
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.7; }
-            100% { opacity: 1; }
-        }
-
-        /* メインコンテンツ */
+        /* Main content */
         .main-content {
+            position: relative;
+            z-index: 1;
             padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
-        /* 価格セクション */
-        .price-section {
-            background: #111;
-            border-radius: 15px;
-            padding: 25px;
+        /* Market status */
+        .market-status {
+            text-align: center;
+            padding: 10px 16px;
+            background: var(--bg-card);
+            backdrop-filter: blur(var(--blur));
+            -webkit-backdrop-filter: blur(var(--blur));
+            border: 1px solid var(--border-card);
+            border-radius: var(--radius-sm);
             margin-bottom: 20px;
-            border: 1px solid #222;
+            font-size: 13px;
+            color: var(--text-secondary);
         }
+        .market-open { color: var(--green) !important; }
+        .market-closed { color: var(--red) !important; }
 
+        /* Glass card */
+        .glass-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(var(--blur));
+            -webkit-backdrop-filter: blur(var(--blur));
+            border: 1px solid var(--border-card);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-bottom: 20px;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        .glass-card:hover { border-color: rgba(255,255,255,0.12); }
+
+        /* Price section */
         .price-main {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
+            align-items: flex-start;
+            margin-bottom: 24px;
         }
 
         .current-price {
             font-size: 48px;
-            font-weight: 700;
-            color: #fff;
+            font-weight: 800;
+            letter-spacing: -1px;
+            color: var(--text-primary);
+            line-height: 1;
         }
 
-        .price-change {
-            text-align: right;
-        }
-
+        .price-change { text-align: right; }
         .change-amount {
-            font-size: 24px;
+            font-size: 22px;
             font-weight: 600;
-            margin-bottom: 5px;
+            margin-bottom: 4px;
         }
-
         .change-percent {
-            font-size: 20px;
+            font-size: 16px;
             font-weight: 500;
         }
-
-        .positive { color: #00ff88; }
-        .negative { color: #ff4757; }
+        .positive { color: var(--green); }
+        .negative { color: var(--red); }
 
         .price-details {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-            margin-top: 20px;
+            gap: 12px;
         }
 
         .detail-item {
-            background: #1a1a1a;
-            padding: 12px 15px;
-            border-radius: 10px;
-            border: 1px solid #333;
+            background: rgba(255,255,255,0.03);
+            padding: 12px 14px;
+            border-radius: var(--radius-sm);
+            border: 1px solid rgba(255,255,255,0.05);
         }
-
         .detail-label {
-            font-size: 12px;
-            color: #888;
-            margin-bottom: 5px;
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 500;
         }
-
         .detail-value {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 600;
-            color: #fff;
+            color: var(--text-primary);
         }
 
-        /* 投資指標セクション */
-        .indicators-section {
-            background: #111;
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 20px;
-            border: 1px solid #222;
-        }
-
+        /* Section title */
         .section-title {
-            font-size: 18px;
+            font-size: 15px;
             font-weight: 600;
-            margin-bottom: 20px;
-            color: #00d4ff;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
-        .indicator-grid {
-            display: grid;
-            gap: 15px;
-        }
+        /* Indicator items with gradient border */
+        .indicator-grid { display: grid; gap: 12px; }
 
         .indicator-item {
-            background: #1a1a1a;
-            padding: 15px;
-            border-radius: 10px;
-            border: 1px solid #333;
+            background: rgba(255,255,255,0.03);
+            padding: 14px 16px;
+            border-radius: var(--radius-sm);
+            border: 1px solid rgba(255,255,255,0.05);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            position: relative;
+            overflow: hidden;
         }
+        .indicator-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+        }
+        .ma-200::before { background: linear-gradient(180deg, var(--yellow), var(--orange)); }
+        .level-12::before { background: linear-gradient(180deg, var(--orange), var(--red)); }
+        .level-18::before { background: linear-gradient(180deg, var(--red), #cc0033); }
+        .week-open::before { background: linear-gradient(180deg, var(--accent), #6366f1); }
+        .rule-5::before { background: linear-gradient(180deg, #6366f1, #a855f7); }
 
         .indicator-label {
-            font-size: 14px;
-            color: #aaa;
+            font-size: 13px;
+            color: var(--text-secondary);
         }
-
         .indicator-value {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 600;
         }
 
-        .ma-200 { border-left: 4px solid #ffc107; }
-        .level-12 { border-left: 4px solid #ff9f1a; }
-        .level-18 { border-left: 4px solid #ff4757; }
-
-        /* 関連指標セクション */
-        .related-section {
-            background: #111;
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 20px;
-            border: 1px solid #222;
-        }
-
+        /* VIX gauge */
         .vix-container, .futures-container {
-            background: #1a1a1a;
-            padding: 15px;
-            border-radius: 10px;
-            border: 1px solid #333;
-            margin-bottom: 15px;
+            background: rgba(255,255,255,0.03);
+            padding: 16px;
+            border-radius: var(--radius-sm);
+            border: 1px solid rgba(255,255,255,0.05);
+            margin-bottom: 12px;
         }
+        .vix-container:last-child, .futures-container:last-child { margin-bottom: 0; }
 
-        .vix-value {
+        .vix-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .vix-value-num {
             font-size: 32px;
             font-weight: 700;
-            margin-bottom: 10px;
+            line-height: 1;
         }
-
-        .vix-status {
+        .vix-change {
             font-size: 14px;
-            padding: 5px 15px;
-            border-radius: 20px;
-            display: inline-block;
             font-weight: 500;
         }
 
-        .vix-low { background: #00ff88; color: #000; }
-        .vix-medium { background: #ffc107; color: #000; }
-        .vix-high { background: #ff4757; color: #fff; }
-
-        /* チャートセクション */
-        .chart-section {
-            background: #111;
-            border-radius: 15px;
-            padding: 20px;
-            border: 1px solid #222;
+        .vix-gauge {
+            height: 6px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 12px 0 8px;
+            position: relative;
+        }
+        .vix-gauge-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1), background 0.5s;
+        }
+        .vix-gauge-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: var(--text-muted);
         }
 
-        .chart-header {
+        .vix-status {
+            font-size: 12px;
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        .vix-low { background: rgba(0,230,138,0.15); color: var(--green); }
+        .vix-medium { background: rgba(255,183,64,0.15); color: var(--yellow); }
+        .vix-high { background: rgba(255,77,106,0.15); color: var(--red); }
+
+        .futures-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
-            cursor: pointer;
+            margin-top: 10px;
         }
-
-        .chart-toggle {
+        .futures-price {
             font-size: 24px;
-            transition: transform 0.3s;
+            font-weight: 600;
         }
+        .futures-change { font-size: 16px; font-weight: 500; }
 
-        .chart-toggle.open {
-            transform: rotate(180deg);
-        }
-
-        .chart-container {
-            height: 300px;
-            display: none;
-        }
-
-        .chart-container.show {
-            display: block;
-        }
-
+        /* Chart */
+        .chart-container { height: 300px; }
         .time-selector {
             display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
+            gap: 8px;
+            margin-bottom: 16px;
             flex-wrap: wrap;
         }
-
         .time-btn {
-            background: #1a1a1a;
-            border: 1px solid #333;
-            color: #fff;
-            padding: 8px 15px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            color: var(--text-secondary);
+            padding: 7px 14px;
             border-radius: 20px;
-            font-size: 14px;
+            font-size: 13px;
+            font-family: inherit;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.25s;
         }
-
-        .time-btn:hover {
-            background: #222;
-            border-color: #00d4ff;
-        }
-
+        .time-btn:hover { background: rgba(255,255,255,0.08); border-color: var(--border-glow); }
         .time-btn.active {
-            background: #00d4ff;
+            background: var(--accent);
             color: #000;
-            border-color: #00d4ff;
+            border-color: var(--accent);
+            font-weight: 600;
+            box-shadow: 0 0 16px var(--accent-glow);
         }
 
-        /* 設定モーダル */
+        /* Settings modal */
         .modal {
             display: none;
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.8);
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             z-index: 1000;
+            align-items: center;
+            justify-content: center;
         }
+        .modal.open { display: flex; }
 
         .modal-content {
-            background: #111;
-            border-radius: 15px;
-            padding: 30px;
-            margin: 50px auto;
-            max-width: 400px;
+            background: rgba(15, 20, 40, 0.95);
+            backdrop-filter: blur(var(--blur));
+            -webkit-backdrop-filter: blur(var(--blur));
+            border: 1px solid var(--border-card);
+            border-radius: var(--radius);
+            padding: 28px;
+            max-width: 420px;
             width: 90%;
-            border: 1px solid #333;
+            max-height: 85vh;
+            overflow-y: auto;
         }
 
         .modal-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 30px;
+            margin-bottom: 28px;
         }
-
         .modal-header h2 {
-            font-size: 24px;
-            color: #00d4ff;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
         }
-
         .close-btn {
-            background: none;
+            background: rgba(255,255,255,0.06);
             border: none;
-            color: #fff;
-            font-size: 28px;
+            color: var(--text-secondary);
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            font-size: 18px;
             cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
         }
+        .close-btn:hover { background: rgba(255,255,255,0.12); color: var(--text-primary); }
 
-        .setting-item {
-            margin-bottom: 25px;
-        }
-
+        .setting-item { margin-bottom: 24px; }
         .setting-label {
             display: block;
             margin-bottom: 10px;
-            color: #aaa;
-            font-size: 14px;
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 500;
         }
-
         .setting-control {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 14px;
         }
-
-        .setting-control input[type="range"] {
-            flex: 1;
-        }
-
-        .setting-control input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
-        }
-
         .setting-value {
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 600;
-            color: #00d4ff;
+            color: var(--accent);
             min-width: 50px;
         }
 
-        /* マーケット状態 */
-        .market-status {
-            text-align: center;
-            padding: 10px;
-            background: #1a1a1a;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            font-size: 14px;
+        /* Range slider */
+        input[type="range"] {
+            flex: 1;
+            -webkit-appearance: none;
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: var(--accent);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--accent-glow);
         }
 
-        .market-open { color: #00ff88; }
-        .market-closed { color: #ff4757; }
-
-        /* ローディング */
-        .loading {
-            text-align: center;
-            padding: 50px;
-            font-size: 18px;
-            color: #666;
+        /* Toggle switch */
+        .toggle {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            flex-shrink: 0;
         }
-
-        /* エラー表示 */
-        .error {
-            background: #ff4757;
-            color: #fff;
-            padding: 15px;
-            border-radius: 10px;
-            margin: 20px;
-            text-align: center;
+        .toggle input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider {
+            position: absolute;
+            inset: 0;
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.3s;
         }
+        .toggle-slider::before {
+            content: '';
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            left: 3px;
+            bottom: 3px;
+            background: #fff;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+        .toggle input:checked + .toggle-slider { background: var(--accent); }
+        .toggle input:checked + .toggle-slider::before { transform: translateX(20px); }
 
-        /* デバッグモード */
+        /* Debug panel */
         .debug-panel {
             display: none;
-            background: #0a0a0a;
-            border: 1px solid #333;
-            border-radius: 10px;
-            padding: 15px;
-            margin: 20px;
-            font-family: monospace;
-            font-size: 12px;
-            color: #0f0;
-            max-height: 300px;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--border-card);
+            border-radius: var(--radius-sm);
+            padding: 14px;
+            margin: 0 20px 20px;
+            font-family: 'SF Mono', Menlo, monospace;
+            font-size: 11px;
+            color: var(--green);
+            max-height: 250px;
             overflow-y: auto;
+            position: relative;
+            z-index: 1;
         }
 
-        /* レスポンシブ対応 */
-        @media (max-width: 375px) {
-            .current-price { font-size: 40px; }
-            .change-amount { font-size: 20px; }
-            .change-percent { font-size: 18px; }
+        /* Responsive */
+        @media (min-width: 768px) {
+            .price-details { grid-template-columns: repeat(4, 1fr); }
+            .main-content { padding: 24px 32px; }
+        }
+
+        @media (min-width: 1024px) {
+            .main-content { padding: 28px 40px; }
+            .indicator-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 480px) {
+            .current-price { font-size: 38px; }
+            .change-amount { font-size: 18px; }
+            .change-percent { font-size: 14px; }
+            .glass-card { padding: 18px; }
+            .main-content { padding: 14px; }
+            .toast { min-width: 260px; max-width: calc(100vw - 40px); }
         }
     </style>
 </head>
 <body>
-    <!-- ヘッダー -->
+    <!-- Toast container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Demo banner -->
+    <div class="demo-banner" id="demoBanner">Demo Mode: API unavailable - displaying sample data</div>
+
+    <!-- Header -->
     <div class="header">
-        <h1>QQQ Pro Tracker</h1>
-        <button class="settings-btn" onclick="app.openSettings()">設定</button>
+        <div class="header-left">
+            <h1>QQQ Pro Tracker</h1>
+            <span class="last-updated" id="lastUpdated"></span>
+        </div>
+        <button class="settings-btn" onclick="app.openSettings()">Settings</button>
     </div>
 
-    <!-- アラートバー -->
-    <div class="alert-bar" id="alertBar"></div>
-
-    <!-- マーケット状態 -->
-    <div class="market-status" id="marketStatus">マーケット状態を確認中...</div>
-
-    <!-- メインコンテンツ -->
+    <!-- Main content -->
     <div class="main-content">
-        <!-- 価格セクション -->
-        <div class="price-section">
+        <!-- Market status -->
+        <div class="market-status" id="marketStatus">Checking market status...</div>
+
+        <!-- Price section -->
+        <div class="glass-card">
             <div class="price-main">
-                <div class="current-price" id="currentPrice">---</div>
+                <div class="current-price" id="currentPrice"><span class="skeleton skeleton-lg"></span></div>
                 <div class="price-change">
-                    <div class="change-amount" id="changeAmount">---</div>
-                    <div class="change-percent" id="changePercent">---</div>
+                    <div class="change-amount" id="changeAmount"><span class="skeleton skeleton-text"></span></div>
+                    <div class="change-percent" id="changePercent"><span class="skeleton skeleton-text" style="width:60px"></span></div>
                 </div>
             </div>
-            
             <div class="price-details">
                 <div class="detail-item">
-                    <div class="detail-label">前日終値</div>
-                    <div class="detail-value" id="prevClose">---</div>
+                    <div class="detail-label">Prev Close</div>
+                    <div class="detail-value" id="prevClose"><span class="skeleton skeleton-text"></span></div>
                 </div>
                 <div class="detail-item">
-                    <div class="detail-label">出来高</div>
-                    <div class="detail-value" id="volume">---</div>
+                    <div class="detail-label">Volume</div>
+                    <div class="detail-value" id="volume"><span class="skeleton skeleton-text"></span></div>
                 </div>
                 <div class="detail-item">
-                    <div class="detail-label">日中高値</div>
-                    <div class="detail-value" id="dayHigh">---</div>
+                    <div class="detail-label">Day High</div>
+                    <div class="detail-value" id="dayHigh"><span class="skeleton skeleton-text"></span></div>
                 </div>
                 <div class="detail-item">
-                    <div class="detail-label">日中安値</div>
-                    <div class="detail-value" id="dayLow">---</div>
+                    <div class="detail-label">Day Low</div>
+                    <div class="detail-value" id="dayLow"><span class="skeleton skeleton-text"></span></div>
                 </div>
                 <div class="detail-item">
-                    <div class="detail-label">52週高値</div>
-                    <div class="detail-value" id="week52High">---</div>
+                    <div class="detail-label">52W High</div>
+                    <div class="detail-value" id="week52High"><span class="skeleton skeleton-text"></span></div>
                 </div>
                 <div class="detail-item">
-                    <div class="detail-label">52週安値</div>
-                    <div class="detail-value" id="week52Low">---</div>
+                    <div class="detail-label">52W Low</div>
+                    <div class="detail-value" id="week52Low"><span class="skeleton skeleton-text"></span></div>
                 </div>
                 <div class="detail-item">
-                    <div class="detail-label">5年最高値</div>
-                    <div class="detail-value" id="year5High">---</div>
+                    <div class="detail-label">5Y High</div>
+                    <div class="detail-value" id="year5High"><span class="skeleton skeleton-text"></span></div>
                 </div>
                 <div class="detail-item">
-                    <div class="detail-label">5年高値差</div>
-                    <div class="detail-value" id="year5Diff">---</div>
+                    <div class="detail-label">5Y Diff</div>
+                    <div class="detail-value" id="year5Diff"><span class="skeleton skeleton-text"></span></div>
                 </div>
             </div>
         </div>
 
-        <!-- 投資指標セクション -->
-        <div class="indicators-section">
-            <h2 class="section-title">
-                <span>📊</span>
-                <span>投資指標</span>
-            </h2>
+        <!-- Indicators section -->
+        <div class="glass-card">
+            <h2 class="section-title">Investment Indicators</h2>
             <div class="indicator-grid">
                 <div class="indicator-item ma-200">
-                    <span class="indicator-label">200日移動平均</span>
-                    <span class="indicator-value" id="ma200">---</span>
+                    <span class="indicator-label">200-Day MA</span>
+                    <span class="indicator-value" id="ma200"><span class="skeleton skeleton-text"></span></span>
                 </div>
                 <div class="indicator-item level-12">
-                    <span class="indicator-label">-12%水準</span>
-                    <span class="indicator-value" id="level12">---</span>
+                    <span class="indicator-label">-12% Level</span>
+                    <span class="indicator-value" id="level12"><span class="skeleton skeleton-text"></span></span>
                 </div>
                 <div class="indicator-item level-18">
-                    <span class="indicator-label">-18%水準</span>
-                    <span class="indicator-value" id="level18">---</span>
+                    <span class="indicator-label">-18% Level</span>
+                    <span class="indicator-value" id="level18"><span class="skeleton skeleton-text"></span></span>
                 </div>
-                <div class="indicator-item">
-                    <span class="indicator-label">週始値</span>
-                    <span class="indicator-value" id="weekOpen">---</span>
+                <div class="indicator-item week-open">
+                    <span class="indicator-label">Week Open</span>
+                    <span class="indicator-value" id="weekOpen"><span class="skeleton skeleton-text"></span></span>
                 </div>
-                <div class="indicator-item">
-                    <span class="indicator-label">-5%ルール</span>
-                    <span class="indicator-value" id="rule5">---</span>
+                <div class="indicator-item rule-5">
+                    <span class="indicator-label">-5% Rule</span>
+                    <span class="indicator-value" id="rule5"><span class="skeleton skeleton-text"></span></span>
                 </div>
             </div>
         </div>
 
-        <!-- 関連指標セクション -->
-        <div class="related-section">
-            <h2 class="section-title">
-                <span>🌡️</span>
-                <span>関連指標</span>
-            </h2>
-            
+        <!-- Related indicators -->
+        <div class="glass-card">
+            <h2 class="section-title">Market Indicators</h2>
             <div class="vix-container">
-                <div class="detail-label">VIX（恐怖指数）</div>
-                <div class="vix-value" id="vixValue">---</div>
-                <span class="vix-status" id="vixStatus">---</span>
+                <div class="detail-label">VIX (Fear Index)</div>
+                <div class="vix-header">
+                    <div>
+                        <div class="vix-value-num" id="vixValue"><span class="skeleton skeleton-text" style="width:60px;height:32px"></span></div>
+                        <div class="vix-change" id="vixChange"></div>
+                    </div>
+                    <span class="vix-status" id="vixStatus"></span>
+                </div>
+                <div class="vix-gauge">
+                    <div class="vix-gauge-fill" id="vixGauge" style="width:0%"></div>
+                </div>
+                <div class="vix-gauge-labels">
+                    <span>0</span>
+                    <span>20</span>
+                    <span>30</span>
+                    <span>40+</span>
+                </div>
             </div>
-
             <div class="futures-container">
-                <div class="detail-label">NQ先物</div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
-                    <span style="font-size: 24px; font-weight: 600;" id="futuresPrice">---</span>
-                    <span style="font-size: 18px;" id="futuresChange">---</span>
+                <div class="detail-label">NQ Futures</div>
+                <div class="futures-row">
+                    <span class="futures-price" id="futuresPrice"><span class="skeleton skeleton-text" style="width:100px;height:24px"></span></span>
+                    <span class="futures-change" id="futuresChange"></span>
                 </div>
             </div>
         </div>
 
-        <!-- チャートセクション -->
-        <div class="chart-section">
-            <div class="chart-header" onclick="app.toggleChart()">
-                <h2 class="section-title" style="margin-bottom: 0;">
-                    <span>📈</span>
-                    <span>価格チャート</span>
-                </h2>
-                <span class="chart-toggle" id="chartToggle">▼</span>
+        <!-- Chart section -->
+        <div class="glass-card">
+            <h2 class="section-title">Price Chart</h2>
+            <div class="time-selector" id="timeSelector">
+                <button class="time-btn active" data-period="1d">1D</button>
+                <button class="time-btn" data-period="5d">5D</button>
+                <button class="time-btn" data-period="1mo">1M</button>
+                <button class="time-btn" data-period="3mo">3M</button>
+                <button class="time-btn" data-period="6mo">6M</button>
+                <button class="time-btn" data-period="1y">1Y</button>
             </div>
-            
             <div class="chart-container" id="chartContainer">
-                <div class="time-selector" id="timeSelector">
-                    <button class="time-btn active" data-period="1d">1日</button>
-                    <button class="time-btn" data-period="5d">5日</button>
-                    <button class="time-btn" data-period="1mo">1ヶ月</button>
-                    <button class="time-btn" data-period="3mo">3ヶ月</button>
-                    <button class="time-btn" data-period="6mo">6ヶ月</button>
-                    <button class="time-btn" data-period="1y">1年</button>
-                </div>
                 <canvas id="priceChart"></canvas>
             </div>
         </div>
     </div>
 
-    <!-- デバッグパネル -->
+    <!-- Debug panel -->
     <div class="debug-panel" id="debugPanel"></div>
 
-    <!-- 設定モーダル -->
+    <!-- Settings modal -->
     <div class="modal" id="settingsModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>設定</h2>
-                <button class="close-btn" onclick="app.closeSettings()">×</button>
+                <h2>Settings</h2>
+                <button class="close-btn" onclick="app.closeSettings()">&times;</button>
             </div>
-            
             <div class="setting-item">
-                <label class="setting-label">更新間隔</label>
+                <label class="setting-label">Refresh Interval</label>
                 <div class="setting-control">
                     <input type="range" id="refreshInterval" min="5" max="60" value="15" step="5">
-                    <span class="setting-value" id="refreshValue">15秒</span>
+                    <span class="setting-value" id="refreshValue">15s</span>
                 </div>
             </div>
-
             <div class="setting-item">
-                <label class="setting-label">音声アラート</label>
+                <label class="setting-label">Sound Alerts</label>
                 <div class="setting-control">
-                    <input type="checkbox" id="soundEnabled" checked>
-                    <span>有効</span>
+                    <label class="toggle">
+                        <input type="checkbox" id="soundEnabled" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span style="color:var(--text-secondary);font-size:13px">Enabled</span>
                 </div>
             </div>
-
             <div class="setting-item">
-                <label class="setting-label">ブラウザ通知</label>
+                <label class="setting-label">Browser Notifications</label>
                 <div class="setting-control">
-                    <input type="checkbox" id="notificationEnabled">
-                    <span>有効</span>
+                    <label class="toggle">
+                        <input type="checkbox" id="notificationEnabled">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span style="color:var(--text-secondary);font-size:13px">Disabled</span>
                 </div>
             </div>
-
             <div class="setting-item">
-                <label class="setting-label">デバッグモード</label>
+                <label class="setting-label">Debug Mode</label>
                 <div class="setting-control">
-                    <input type="checkbox" id="debugMode">
-                    <span>有効</span>
+                    <label class="toggle">
+                        <input type="checkbox" id="debugMode">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span style="color:var(--text-secondary);font-size:13px">Off</span>
                 </div>
             </div>
-
             <div class="setting-item">
-                <label class="setting-label">デモモード</label>
+                <label class="setting-label">Demo Mode</label>
                 <div class="setting-control">
-                    <input type="checkbox" id="demoMode">
-                    <span>有効（APIエラー時自動切替）</span>
+                    <label class="toggle">
+                        <input type="checkbox" id="demoMode">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span style="color:var(--text-secondary);font-size:13px">Auto-fallback on API error</span>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // QQQ Pro Tracker Application
-        const app = {
-            // 設定（メモリ内で管理）
-            settings: {
-                refreshInterval: 15,
-                soundEnabled: true,
-                notificationEnabled: false,
-                debugMode: false,
-                demoMode: false
-            },
+    // ============================================================
+    // CacheManager - localStorage with TTL
+    // ============================================================
+    const CacheManager = {
+        get(key) {
+            try {
+                const raw = localStorage.getItem(`qqq_${key}`);
+                if (!raw) return null;
+                const { data, expiry } = JSON.parse(raw);
+                if (Date.now() > expiry) { localStorage.removeItem(`qqq_${key}`); return null; }
+                return data;
+            } catch { return null; }
+        },
+        set(key, data, ttlMs) {
+            try {
+                localStorage.setItem(`qqq_${key}`, JSON.stringify({ data, expiry: Date.now() + ttlMs }));
+            } catch { /* quota exceeded - ignore */ }
+        }
+    };
 
-            // データ保存用
-            data: {
-                currentPrice: null,
-                previousPrice: null,
-                previousClose: null,
-                dayHigh: null,
-                dayLow: null,
-                week52High: null,
-                week52Low: null,
-                volume: null,
-                ma200: null,
-                weekOpen: null,
-                vix: null,
-                nqFutures: null,
-                chartData: null,
-                year5High: null
-            },
+    // ============================================================
+    // ToastManager
+    // ============================================================
+    const ToastManager = {
+        container: null,
+        init() { this.container = document.getElementById('toastContainer'); },
+        show(message, type = 'info', duration = 5000) {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            this.container.appendChild(toast);
+            requestAnimationFrame(() => { requestAnimationFrame(() => { toast.classList.add('show'); }); });
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 400);
+            }, duration);
+        }
+    };
 
-            // アラート発動済みフラグ
-            alertsTriggered: {
-                level12: false,
-                level18: false,
-                ma200: false,
-                rule5: false,
-                vix30: false,
-                vix35: false
-            },
+    // ============================================================
+    // NumberAnimator - smooth value transitions
+    // ============================================================
+    const NumberAnimator = {
+        animate(element, targetValue, prefix = '$', decimals = 2, duration = 600) {
+            const currentText = element.textContent.replace(/[^0-9.-]/g, '');
+            const startValue = parseFloat(currentText) || 0;
+            if (Math.abs(startValue - targetValue) < 0.001) {
+                element.textContent = prefix + targetValue.toFixed(decimals);
+                return;
+            }
+            const startTime = performance.now();
+            const step = (now) => {
+                const elapsed = now - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const eased = 1 - Math.pow(1 - progress, 3); // easeOutCubic
+                const current = startValue + (targetValue - startValue) * eased;
+                element.textContent = prefix + current.toFixed(decimals);
+                if (progress < 1) requestAnimationFrame(step);
+            };
+            requestAnimationFrame(step);
+        }
+    };
 
-            // チャート関連
-            chart: null,
-            chartPeriod: '1d',
+    // ============================================================
+    // DOMCache - cached element references
+    // ============================================================
+    const DOMCache = {};
+    function $(id) {
+        if (!DOMCache[id]) DOMCache[id] = document.getElementById(id);
+        return DOMCache[id];
+    }
 
-            // タイマー
-            refreshTimer: null,
+    // ============================================================
+    // Main Application
+    // ============================================================
+    const app = {
+        settings: {
+            refreshInterval: 15,
+            soundEnabled: true,
+            notificationEnabled: false,
+            debugMode: false,
+            demoMode: false
+        },
 
-            // CORSプロキシリスト
-            corsProxies: [
-                'https://api.allorigins.win/raw?url=',
-                'https://corsproxy.io/?',
-                'https://proxy.cors.sh/',
-                'https://thingproxy.freeboard.io/fetch/'
-            ],
-            currentProxyIndex: 0,
+        data: {
+            currentPrice: null, previousClose: null,
+            dayHigh: null, dayLow: null,
+            week52High: null, week52Low: null,
+            volume: null, ma200: null, weekOpen: null,
+            vix: null, nqFutures: null, year5High: null
+        },
 
-            // 初期化
-            init() {
-                this.log('QQQ Pro Tracker 初期化開始');
-                
-                // イベントリスナー設定
-                this.setupEventListeners();
-                
-                // 通知権限リクエスト
-                if ('Notification' in window && Notification.permission === 'default') {
-                    Notification.requestPermission();
+        alertsTriggered: {
+            level12: false, level18: false, ma200: false,
+            rule5: false, vix30: false, vix35: false
+        },
+
+        chart: null,
+        chartPeriod: '1d',
+        refreshTimer: null,
+
+        corsProxies: [
+            'https://api.allorigins.win/raw?url=',
+            'https://corsproxy.io/?',
+            'https://proxy.cors.sh/',
+            'https://thingproxy.freeboard.io/fetch/'
+        ],
+        currentProxyIndex: 0,
+
+        // ------- Init -------
+        init() {
+            this.log('QQQ Pro Tracker initializing');
+            this.loadSettings();
+            ToastManager.init();
+            this.setupEventListeners();
+
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+
+            this.fetchData();
+            this.startAutoRefresh();
+            this.initChart();
+            this.fetchChartData();
+            this.updateMarketStatus();
+
+            this.log('Initialization complete');
+        },
+
+        // ------- Settings persistence -------
+        loadSettings() {
+            try {
+                const saved = localStorage.getItem('qqq_settings');
+                if (saved) {
+                    Object.assign(this.settings, JSON.parse(saved));
+                    $('refreshInterval').value = this.settings.refreshInterval;
+                    $('refreshValue').textContent = `${this.settings.refreshInterval}s`;
+                    $('soundEnabled').checked = this.settings.soundEnabled;
+                    $('notificationEnabled').checked = this.settings.notificationEnabled;
+                    $('debugMode').checked = this.settings.debugMode;
+                    $('demoMode').checked = this.settings.demoMode;
+                    if (this.settings.debugMode) $('debugPanel').style.display = 'block';
+                    if (this.settings.demoMode) $('demoBanner').classList.add('show');
                 }
-                
-                // 初回データ取得
-                this.fetchData();
-                
-                // 自動更新開始
+            } catch { /* ignore */ }
+        },
+
+        saveSettings() {
+            try {
+                localStorage.setItem('qqq_settings', JSON.stringify(this.settings));
+            } catch { /* ignore */ }
+        },
+
+        // ------- Events -------
+        setupEventListeners() {
+            $('refreshInterval').addEventListener('input', (e) => {
+                this.settings.refreshInterval = parseInt(e.target.value);
+                $('refreshValue').textContent = `${e.target.value}s`;
                 this.startAutoRefresh();
-                
-                // チャート初期化
-                this.initChart();
-                
-                this.log('初期化完了');
-            },
+                this.saveSettings();
+            });
 
-            // イベントリスナー設定
-            setupEventListeners() {
-                // 更新間隔スライダー
-                document.getElementById('refreshInterval').addEventListener('input', (e) => {
-                    this.settings.refreshInterval = parseInt(e.target.value);
-                    document.getElementById('refreshValue').textContent = `${e.target.value}秒`;
-                    this.startAutoRefresh(); // 再起動
+            $('soundEnabled').addEventListener('change', (e) => {
+                this.settings.soundEnabled = e.target.checked;
+                e.target.closest('.setting-control').querySelector('span:last-child').textContent = e.target.checked ? 'Enabled' : 'Disabled';
+                this.saveSettings();
+            });
+
+            $('notificationEnabled').addEventListener('change', (e) => {
+                this.settings.notificationEnabled = e.target.checked;
+                e.target.closest('.setting-control').querySelector('span:last-child').textContent = e.target.checked ? 'Enabled' : 'Disabled';
+                if (e.target.checked && Notification.permission === 'default') Notification.requestPermission();
+                this.saveSettings();
+            });
+
+            $('debugMode').addEventListener('change', (e) => {
+                this.settings.debugMode = e.target.checked;
+                $('debugPanel').style.display = e.target.checked ? 'block' : 'none';
+                e.target.closest('.setting-control').querySelector('span:last-child').textContent = e.target.checked ? 'On' : 'Off';
+                this.saveSettings();
+            });
+
+            $('demoMode').addEventListener('change', (e) => {
+                this.settings.demoMode = e.target.checked;
+                $('demoBanner').classList.toggle('show', e.target.checked);
+                e.target.closest('.setting-control').querySelector('span:last-child').textContent = e.target.checked ? 'Active' : 'Auto-fallback on API error';
+                if (e.target.checked) this.useDemoData();
+                else this.fetchData();
+                this.saveSettings();
+            });
+
+            document.querySelectorAll('.time-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    this.chartPeriod = e.target.dataset.period;
+                    this.fetchChartData();
                 });
+            });
+        },
 
-                // 音声アラート
-                document.getElementById('soundEnabled').addEventListener('change', (e) => {
-                    this.settings.soundEnabled = e.target.checked;
-                });
+        // ------- Data fetch (parallel) -------
+        async fetchData() {
+            this.log('Fetching data (parallel)');
+            try {
+                // Parallel fetch: QQQ + VIX + NQ Futures
+                const [qqqData, vixData, nqData] = await Promise.all([
+                    this.fetchWithProxy('https://query1.finance.yahoo.com/v8/finance/chart/QQQ'),
+                    this.fetchWithProxy('https://query1.finance.yahoo.com/v8/finance/chart/^VIX'),
+                    this.fetchWithProxy('https://query1.finance.yahoo.com/v8/finance/chart/NQ=F')
+                ]);
 
-                // 通知
-                document.getElementById('notificationEnabled').addEventListener('change', (e) => {
-                    this.settings.notificationEnabled = e.target.checked;
-                    if (e.target.checked && Notification.permission === 'default') {
-                        Notification.requestPermission();
-                    }
-                });
+                // Process QQQ
+                if (qqqData?.chart?.result?.[0]) {
+                    const result = qqqData.chart.result[0];
+                    const quote = result.indicators.quote[0];
+                    const meta = result.meta;
 
-                // デバッグモード
-                document.getElementById('debugMode').addEventListener('change', (e) => {
-                    this.settings.debugMode = e.target.checked;
-                    document.getElementById('debugPanel').style.display = e.target.checked ? 'block' : 'none';
-                });
+                    this.data.currentPrice = meta.regularMarketPrice;
+                    this.data.previousClose = meta.previousClose;
+                    this.data.dayHigh = meta.regularMarketDayHigh;
+                    this.data.dayLow = meta.regularMarketDayLow;
+                    this.data.volume = quote.volume?.[quote.volume.length - 1];
+                    this.data.week52High = meta.fiftyTwoWeekHigh;
+                    this.data.week52Low = meta.fiftyTwoWeekLow;
 
-                // デモモード
-                document.getElementById('demoMode').addEventListener('change', (e) => {
-                    this.settings.demoMode = e.target.checked;
-                    if (e.target.checked) {
-                        this.useDemoData();
-                    } else {
-                        this.fetchData();
-                    }
-                });
-
-                // チャート期間選択
-                document.querySelectorAll('.time-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
-                        e.target.classList.add('active');
-                        this.chartPeriod = e.target.dataset.period;
-                        this.fetchChartData();
-                    });
-                });
-            },
-
-            // データ取得
-            async fetchData() {
-                this.log('データ取得開始');
-                
-                try {
-                    // QQQデータ取得
-                    const qqqData = await this.fetchWithProxy('https://query1.finance.yahoo.com/v8/finance/chart/QQQ');
-                    
-                    if (qqqData && qqqData.chart && qqqData.chart.result && qqqData.chart.result[0]) {
-                        const result = qqqData.chart.result[0];
-                        const quote = result.indicators.quote[0];
-                        const meta = result.meta;
-                        
-                        // データ更新
-                        this.data.currentPrice = meta.regularMarketPrice;
-                        this.data.previousClose = meta.previousClose;
-                        this.data.dayHigh = meta.regularMarketDayHigh;
-                        this.data.dayLow = meta.regularMarketDayLow;
-                        this.data.volume = quote.volume[quote.volume.length - 1];
-                        
-                        // 52週高値・安値
-                        this.data.week52High = meta.fiftyTwoWeekHigh;
-                        this.data.week52Low = meta.fiftyTwoWeekLow;
-                        
-                        // UI更新
-                        this.updateUI();
-                        
-                        // 200MA計算
-                        await this.calculate200MA();
-                        
-                        // VIXデータ取得
-                        await this.fetchVIX();
-                        
-                        // NQ先物データ取得
-                        await this.fetchNQFutures();
-                        
-                        // 週始値取得
-                        await this.fetchWeekOpen();
-                        
-                        // 5年最高値取得
-                        await this.fetch5YearHigh();
-                        
-                        // アラートチェック
-                        this.checkAlerts();
-                        
-                        // マーケット状態更新
-                        this.updateMarketStatus();
-                        
-                    } else {
-                        throw new Error('データ形式が不正です');
-                    }
-                    
-                } catch (error) {
-                    this.log(`エラー: ${error.message}`, 'error');
-                    
-                    // デモモードに自動切替
-                    if (!this.settings.demoMode) {
-                        this.log('デモモードに切り替えます');
-                        this.settings.demoMode = true;
-                        document.getElementById('demoMode').checked = true;
-                        this.useDemoData();
-                    }
+                    this.updateUI();
                 }
-            },
 
-            // CORSプロキシ経由でのデータ取得
-            async fetchWithProxy(url) {
-                const maxRetries = this.corsProxies.length;
-                let retries = 0;
-                
-                while (retries < maxRetries) {
-                    const proxy = this.corsProxies[this.currentProxyIndex];
-                    const proxyUrl = proxy + encodeURIComponent(url);
-                    
-                    try {
-                        this.log(`プロキシ使用: ${proxy}`);
-                        const response = await fetch(proxyUrl);
-                        
-                        if (!response.ok) {
-                            throw new Error(`HTTP error! status: ${response.status}`);
-                        }
-                        
-                        const data = await response.json();
-                        return data;
-                        
-                    } catch (error) {
-                        this.log(`プロキシ ${proxy} でエラー: ${error.message}`, 'error');
-                        
-                        // 次のプロキシに切り替え
-                        this.currentProxyIndex = (this.currentProxyIndex + 1) % this.corsProxies.length;
-                        retries++;
-                    }
-                }
-                
-                throw new Error('すべてのプロキシで失敗しました');
-            },
-
-            // 200MA計算
-            async calculate200MA() {
-                try {
-                    this.log('200MA計算開始');
-                    
-                    // 過去200営業日分のデータを取得
-                    const endDate = Math.floor(Date.now() / 1000);
-                    const startDate = endDate - (300 * 24 * 60 * 60); // 300日前（余裕を持って）
-                    
-                    const url = `https://query1.finance.yahoo.com/v8/finance/chart/QQQ?period1=${startDate}&period2=${endDate}&interval=1d`;
-                    const data = await this.fetchWithProxy(url);
-                    
-                    if (data && data.chart && data.chart.result && data.chart.result[0]) {
-                        const closes = data.chart.result[0].indicators.quote[0].close;
-                        
-                        // null値を除外し、最新200個を取得
-                        const validCloses = closes.filter(c => c !== null);
-                        const last200 = validCloses.slice(-200);
-                        
-                        if (last200.length >= 200) {
-                            const sum = last200.reduce((a, b) => a + b, 0);
-                            this.data.ma200 = sum / 200;
-                            
-                            document.getElementById('ma200').textContent = `$${this.data.ma200.toFixed(2)}`;
-                            this.log(`200MA計算完了: $${this.data.ma200.toFixed(2)}`);
-                        } else {
-                            this.log(`データ不足: ${last200.length}日分のみ`, 'warn');
-                        }
-                    }
-                    
-                } catch (error) {
-                    this.log(`200MA計算エラー: ${error.message}`, 'error');
-                }
-            },
-
-            // VIXデータ取得
-            async fetchVIX() {
-                try {
-                    this.log('VIXデータ取得開始');
-                    
-                    const data = await this.fetchWithProxy('https://query1.finance.yahoo.com/v8/finance/chart/^VIX');
-                    
-                    if (data && data.chart && data.chart.result && data.chart.result[0]) {
-                        const meta = data.chart.result[0].meta;
-                        this.data.vix = {
-                            value: meta.regularMarketPrice,
-                            change: meta.regularMarketPrice - meta.previousClose,
-                            changePercent: ((meta.regularMarketPrice - meta.previousClose) / meta.previousClose) * 100
-                        };
-                        
-                        // VIX表示更新
-                        this.updateVIX();
-                        
-                    }
-                } catch (error) {
-                    this.log(`VIXデータ取得エラー: ${error.message}`, 'error');
-                }
-            },
-
-            // NQ先物データ取得
-            async fetchNQFutures() {
-                try {
-                    this.log('NQ先物データ取得開始');
-                    
-                    const data = await this.fetchWithProxy('https://query1.finance.yahoo.com/v8/finance/chart/NQ=F');
-                    
-                    if (data && data.chart && data.chart.result && data.chart.result[0]) {
-                        const meta = data.chart.result[0].meta;
-                        this.data.nqFutures = {
-                            price: meta.regularMarketPrice,
-                            change: meta.regularMarketPrice - meta.previousClose,
-                            changePercent: ((meta.regularMarketPrice - meta.previousClose) / meta.previousClose) * 100
-                        };
-                        
-                        // NQ先物表示更新
-                        this.updateNQFutures();
-                        
-                    }
-                } catch (error) {
-                    this.log(`NQ先物データ取得エラー: ${error.message}`, 'error');
-                }
-            },
-
-            // 週始値取得
-            async fetchWeekOpen() {
-                try {
-                    this.log('週始値取得開始');
-                    
-                    // 現在の日付から今週の月曜日を計算
-                    const now = new Date();
-                    const dayOfWeek = now.getDay();
-                    const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // 日曜日の場合は前週の月曜日
-                    const monday = new Date(now);
-                    monday.setDate(monday.getDate() + diff);
-                    monday.setHours(0, 0, 0, 0);
-                    
-                    const startTime = Math.floor(monday.getTime() / 1000);
-                    const endTime = startTime + (5 * 24 * 60 * 60); // 金曜日まで
-                    
-                    const url = `https://query1.finance.yahoo.com/v8/finance/chart/QQQ?period1=${startTime}&period2=${endTime}&interval=1d`;
-                    const data = await this.fetchWithProxy(url);
-                    
-                    if (data && data.chart && data.chart.result && data.chart.result[0]) {
-                        const opens = data.chart.result[0].indicators.quote[0].open;
-                        
-                        // 最初の有効な始値を週始値とする
-                        for (let i = 0; i < opens.length; i++) {
-                            if (opens[i] !== null) {
-                                this.data.weekOpen = opens[i];
-                                document.getElementById('weekOpen').textContent = `$${this.data.weekOpen.toFixed(2)}`;
-                                
-                                // -5%ルール計算
-                                if (this.data.currentPrice && this.data.weekOpen) {
-                                    const weekChange = ((this.data.currentPrice - this.data.weekOpen) / this.data.weekOpen) * 100;
-                                    const rule5Element = document.getElementById('rule5');
-                                    rule5Element.textContent = `${weekChange >= 0 ? '+' : ''}${weekChange.toFixed(2)}%`;
-                                    rule5Element.className = weekChange < 0 ? 'indicator-value negative' : 'indicator-value positive';
-                                }
-                                
-                                break;
-                            }
-                        }
-                    }
-                    
-                } catch (error) {
-                    this.log(`週始値取得エラー: ${error.message}`, 'error');
-                }
-            },
-
-            // 5年最高値取得
-            async fetch5YearHigh() {
-                try {
-                    this.log('5年最高値取得開始');
-                    
-                    const endDate = Math.floor(Date.now() / 1000);
-                    const startDate = endDate - (5 * 365 * 24 * 60 * 60); // 5年前
-                    
-                    const url = `https://query1.finance.yahoo.com/v8/finance/chart/QQQ?period1=${startDate}&period2=${endDate}&interval=1wk`;
-                    const data = await this.fetchWithProxy(url);
-                    
-                    if (data && data.chart && data.chart.result && data.chart.result[0]) {
-                        const highs = data.chart.result[0].indicators.quote[0].high;
-                        
-                        // null値を除外して最高値を取得
-                        const validHighs = highs.filter(h => h !== null);
-                        this.data.year5High = Math.max(...validHighs);
-                        
-                        document.getElementById('year5High').textContent = `$${this.data.year5High.toFixed(2)}`;
-                        
-                        // 現在価格との差を計算
-                        if (this.data.currentPrice) {
-                            const diff = ((this.data.currentPrice - this.data.year5High) / this.data.year5High) * 100;
-                            const diffElement = document.getElementById('year5Diff');
-                            diffElement.textContent = `${diff >= 0 ? '+' : ''}${diff.toFixed(2)}%`;
-                            diffElement.className = diff < 0 ? 'detail-value negative' : 'detail-value positive';
-                        }
-                    }
-                    
-                } catch (error) {
-                    this.log(`5年最高値取得エラー: ${error.message}`, 'error');
-                }
-            },
-
-            // チャートデータ取得
-            async fetchChartData() {
-                try {
-                    this.log(`チャートデータ取得開始: ${this.chartPeriod}`);
-                    
-                    const periods = {
-                        '1d': { interval: '5m', range: '1d' },
-                        '5d': { interval: '30m', range: '5d' },
-                        '1mo': { interval: '1h', range: '1mo' },
-                        '3mo': { interval: '1d', range: '3mo' },
-                        '6mo': { interval: '1d', range: '6mo' },
-                        '1y': { interval: '1wk', range: '1y' }
+                // Process VIX
+                if (vixData?.chart?.result?.[0]) {
+                    const meta = vixData.chart.result[0].meta;
+                    this.data.vix = {
+                        value: meta.regularMarketPrice,
+                        change: meta.regularMarketPrice - meta.previousClose,
+                        changePercent: ((meta.regularMarketPrice - meta.previousClose) / meta.previousClose) * 100
                     };
-                    
-                    const config = periods[this.chartPeriod];
-                    const url = `https://query1.finance.yahoo.com/v8/finance/chart/QQQ?range=${config.range}&interval=${config.interval}`;
-                    
-                    const data = await this.fetchWithProxy(url);
-                    
-                    if (data && data.chart && data.chart.result && data.chart.result[0]) {
-                        const result = data.chart.result[0];
-                        const timestamps = result.timestamp;
-                        const closes = result.indicators.quote[0].close;
-                        
-                        // チャートデータを整形
-                        this.chartData = {
-                            labels: timestamps.map(t => this.formatTimestamp(t * 1000, this.chartPeriod)),
-                            prices: closes
-                        };
-                        
-                        // チャート更新
-                        this.updateChart();
-                    }
-                    
+                    this.updateVIX();
+                }
+
+                // Process NQ Futures
+                if (nqData?.chart?.result?.[0]) {
+                    const meta = nqData.chart.result[0].meta;
+                    this.data.nqFutures = {
+                        price: meta.regularMarketPrice,
+                        change: meta.regularMarketPrice - meta.previousClose,
+                        changePercent: ((meta.regularMarketPrice - meta.previousClose) / meta.previousClose) * 100
+                    };
+                    this.updateNQFutures();
+                }
+
+                // Parallel secondary fetches (cached where possible)
+                await Promise.all([
+                    this.calculate200MA(),
+                    this.fetchWeekOpen(),
+                    this.fetch5YearHigh()
+                ]);
+
+                this.checkAlerts();
+                this.updateMarketStatus();
+                this.updateLastUpdated();
+
+            } catch (error) {
+                this.log(`Error: ${error.message}`, 'error');
+                ToastManager.show(`Data fetch failed: ${error.message}`, 'error');
+
+                if (!this.settings.demoMode) {
+                    this.log('Switching to demo mode');
+                    this.settings.demoMode = true;
+                    $('demoMode').checked = true;
+                    $('demoBanner').classList.add('show');
+                    this.useDemoData();
+                    this.saveSettings();
+                }
+            }
+        },
+
+        updateLastUpdated() {
+            const now = new Date();
+            $('lastUpdated').textContent = `Updated ${now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
+        },
+
+        // ------- Proxy fetch -------
+        async fetchWithProxy(url) {
+            const maxRetries = this.corsProxies.length;
+            let retries = 0;
+
+            while (retries < maxRetries) {
+                const proxy = this.corsProxies[this.currentProxyIndex];
+                const proxyUrl = proxy + encodeURIComponent(url);
+
+                try {
+                    this.log(`Using proxy: ${proxy}`);
+                    const response = await fetch(proxyUrl);
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    return await response.json();
                 } catch (error) {
-                    this.log(`チャートデータ取得エラー: ${error.message}`, 'error');
+                    this.log(`Proxy ${proxy} failed: ${error.message}`, 'error');
+                    this.currentProxyIndex = (this.currentProxyIndex + 1) % this.corsProxies.length;
+                    retries++;
                 }
-            },
+            }
+            throw new Error('All proxies failed');
+        },
 
-            // タイムスタンプフォーマット
-            formatTimestamp(timestamp, period) {
-                const date = new Date(timestamp);
-                
-                switch (period) {
-                    case '1d':
-                        return date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
-                    case '5d':
-                        return date.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-                    default:
-                        return date.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' });
+        // ------- 200MA (cached 24h) -------
+        async calculate200MA() {
+            const cached = CacheManager.get('ma200');
+            if (cached) {
+                this.data.ma200 = cached;
+                NumberAnimator.animate($('ma200'), cached);
+                return;
+            }
+
+            try {
+                this.log('Calculating 200MA');
+                const endDate = Math.floor(Date.now() / 1000);
+                const startDate = endDate - (300 * 24 * 60 * 60);
+                const url = `https://query1.finance.yahoo.com/v8/finance/chart/QQQ?period1=${startDate}&period2=${endDate}&interval=1d`;
+                const data = await this.fetchWithProxy(url);
+
+                if (data?.chart?.result?.[0]) {
+                    const closes = data.chart.result[0].indicators.quote[0].close;
+                    const validCloses = closes.filter(c => c !== null);
+                    const last200 = validCloses.slice(-200);
+
+                    if (last200.length >= 200) {
+                        const sum = last200.reduce((a, b) => a + b, 0);
+                        this.data.ma200 = sum / 200;
+                        CacheManager.set('ma200', this.data.ma200, 24 * 60 * 60 * 1000);
+                        NumberAnimator.animate($('ma200'), this.data.ma200);
+                        this.log(`200MA: $${this.data.ma200.toFixed(2)}`);
+                    }
                 }
-            },
+            } catch (error) {
+                this.log(`200MA error: ${error.message}`, 'error');
+            }
+        },
 
-            // UI更新
-            updateUI() {
-                if (!this.data.currentPrice) return;
-                
-                // 現在価格
-                document.getElementById('currentPrice').textContent = `$${this.data.currentPrice.toFixed(2)}`;
-                
-                // 変動額・率
-                const change = this.data.currentPrice - this.data.previousClose;
-                const changePercent = (change / this.data.previousClose) * 100;
-                
-                const changeAmountEl = document.getElementById('changeAmount');
-                const changePercentEl = document.getElementById('changePercent');
-                
-                changeAmountEl.textContent = `${change >= 0 ? '+' : ''}${change.toFixed(2)}`;
-                changePercentEl.textContent = `(${change >= 0 ? '+' : ''}${changePercent.toFixed(2)}%)`;
-                
-                changeAmountEl.className = change >= 0 ? 'change-amount positive' : 'change-amount negative';
-                changePercentEl.className = change >= 0 ? 'change-percent positive' : 'change-percent negative';
-                
-                // その他の価格情報
-                document.getElementById('prevClose').textContent = `$${this.data.previousClose.toFixed(2)}`;
-                document.getElementById('dayHigh').textContent = `$${this.data.dayHigh.toFixed(2)}`;
-                document.getElementById('dayLow').textContent = `$${this.data.dayLow.toFixed(2)}`;
-                document.getElementById('week52High').textContent = `$${this.data.week52High.toFixed(2)}`;
-                document.getElementById('week52Low').textContent = `$${this.data.week52Low.toFixed(2)}`;
-                
-                // 出来高
-                document.getElementById('volume').textContent = this.formatVolume(this.data.volume);
-                
-                // -12%、-18%水準
-                const level12 = this.data.previousClose * 0.88;
-                const level18 = this.data.previousClose * 0.82;
-                
-                document.getElementById('level12').textContent = `$${level12.toFixed(2)}`;
-                document.getElementById('level18').textContent = `$${level18.toFixed(2)}`;
-                
-                // 水準の色変更
-                if (this.data.currentPrice <= level18) {
-                    document.getElementById('level18').style.color = '#ff4757';
-                } else if (this.data.currentPrice <= level12) {
-                    document.getElementById('level12').style.color = '#ff9f1a';
-                }
-            },
+        // ------- Week open (cached 7d) -------
+        async fetchWeekOpen() {
+            const cached = CacheManager.get('weekOpen');
+            if (cached) {
+                this.data.weekOpen = cached;
+                NumberAnimator.animate($('weekOpen'), cached);
+                this.updateRule5();
+                return;
+            }
 
-            // VIX表示更新
-            updateVIX() {
-                if (!this.data.vix) return;
-                
-                const vixValueEl = document.getElementById('vixValue');
-                const vixStatusEl = document.getElementById('vixStatus');
-                
-                vixValueEl.textContent = this.data.vix.value.toFixed(2);
-                
-                // 変動表示
-                const changeText = `${this.data.vix.change >= 0 ? '+' : ''}${this.data.vix.change.toFixed(2)} (${this.data.vix.changePercent >= 0 ? '+' : ''}${this.data.vix.changePercent.toFixed(2)}%)`;
-                vixValueEl.innerHTML = `${this.data.vix.value.toFixed(2)}<br><span style="font-size: 16px; color: ${this.data.vix.change >= 0 ? '#ff4757' : '#00ff88'}">${changeText}</span>`;
-                
-                // ステータス判定
-                let status, statusClass;
-                if (this.data.vix.value < 20) {
-                    status = '低ボラティリティ';
-                    statusClass = 'vix-low';
-                } else if (this.data.vix.value < 30) {
-                    status = '中ボラティリティ';
-                    statusClass = 'vix-medium';
-                } else {
-                    status = '高ボラティリティ';
-                    statusClass = 'vix-high';
-                }
-                
-                vixStatusEl.textContent = status;
-                vixStatusEl.className = `vix-status ${statusClass}`;
-            },
-
-            // NQ先物表示更新
-            updateNQFutures() {
-                if (!this.data.nqFutures) return;
-                
-                document.getElementById('futuresPrice').textContent = `$${this.data.nqFutures.price.toFixed(2)}`;
-                
-                const changeEl = document.getElementById('futuresChange');
-                const changeText = `${this.data.nqFutures.change >= 0 ? '+' : ''}${this.data.nqFutures.change.toFixed(2)} (${this.data.nqFutures.changePercent >= 0 ? '+' : ''}${this.data.nqFutures.changePercent.toFixed(2)}%)`;
-                
-                changeEl.textContent = changeText;
-                changeEl.className = this.data.nqFutures.change >= 0 ? 'positive' : 'negative';
-            },
-
-            // マーケット状態更新
-            updateMarketStatus() {
+            try {
+                this.log('Fetching week open');
                 const now = new Date();
-                const nyTime = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
-                const day = nyTime.getDay();
-                const hour = nyTime.getHours();
-                const minute = nyTime.getMinutes();
-                
-                let status, statusClass;
-                
-                // 週末チェック
-                if (day === 0 || day === 6) {
-                    status = '週末（マーケット休場）';
-                    statusClass = 'market-closed';
-                } else if (hour < 9 || hour >= 16 || (hour === 9 && minute < 30)) {
-                    status = 'マーケット時間外';
-                    statusClass = 'market-closed';
-                } else {
-                    status = 'マーケット開場中';
-                    statusClass = 'market-open';
-                }
-                
-                const statusEl = document.getElementById('marketStatus');
-                statusEl.textContent = status + ` (NY時間: ${nyTime.toLocaleTimeString('ja-JP')})`;
-                statusEl.className = `market-status ${statusClass}`;
-            },
+                const dayOfWeek = now.getDay();
+                const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+                const monday = new Date(now);
+                monday.setDate(monday.getDate() + diff);
+                monday.setHours(0, 0, 0, 0);
 
-            // アラートチェック
-            checkAlerts() {
-                if (!this.data.currentPrice || !this.data.previousClose) return;
-                
-                const alerts = [];
-                
-                // -12%水準チェック
-                const level12 = this.data.previousClose * 0.88;
-                if (this.data.currentPrice <= level12 && !this.alertsTriggered.level12) {
-                    alerts.push('🚨 -12%水準を下回りました！');
-                    this.alertsTriggered.level12 = true;
-                } else if (this.data.currentPrice > level12) {
-                    this.alertsTriggered.level12 = false;
-                }
-                
-                // -18%水準チェック
-                const level18 = this.data.previousClose * 0.82;
-                if (this.data.currentPrice <= level18 && !this.alertsTriggered.level18) {
-                    alerts.push('🚨 -18%水準を下回りました！');
-                    this.alertsTriggered.level18 = true;
-                } else if (this.data.currentPrice > level18) {
-                    this.alertsTriggered.level18 = false;
-                }
-                
-                // 200MAチェック
-                if (this.data.ma200 && this.data.currentPrice <= this.data.ma200 && !this.alertsTriggered.ma200) {
-                    alerts.push('📊 200日移動平均を下回りました！');
-                    this.alertsTriggered.ma200 = true;
-                } else if (this.data.ma200 && this.data.currentPrice > this.data.ma200) {
-                    this.alertsTriggered.ma200 = false;
-                }
-                
-                // -5%ルールチェック
-                if (this.data.weekOpen) {
-                    const weekChange = ((this.data.currentPrice - this.data.weekOpen) / this.data.weekOpen) * 100;
-                    if (weekChange <= -5 && !this.alertsTriggered.rule5) {
-                        alerts.push('📉 -5%ルール発動！（週始値から-5%以上の下落）');
-                        this.alertsTriggered.rule5 = true;
-                    } else if (weekChange > -5) {
-                        this.alertsTriggered.rule5 = false;
-                    }
-                }
-                
-                // VIXチェック
-                if (this.data.vix) {
-                    if (this.data.vix.value >= 35 && !this.alertsTriggered.vix35) {
-                        alerts.push('🌡️ VIX 35超え！（極度の恐怖）');
-                        this.alertsTriggered.vix35 = true;
-                    } else if (this.data.vix.value < 35) {
-                        this.alertsTriggered.vix35 = false;
-                    }
-                    
-                    if (this.data.vix.value >= 30 && this.data.vix.value < 35 && !this.alertsTriggered.vix30) {
-                        alerts.push('🌡️ VIX 30超え！（高ボラティリティ）');
-                        this.alertsTriggered.vix30 = true;
-                    } else if (this.data.vix.value < 30) {
-                        this.alertsTriggered.vix30 = false;
-                    }
-                }
-                
-                // アラート表示
-                if (alerts.length > 0) {
-                    this.showAlert(alerts.join(' '));
-                }
-            },
+                const startTime = Math.floor(monday.getTime() / 1000);
+                const endTime = startTime + (5 * 24 * 60 * 60);
+                const url = `https://query1.finance.yahoo.com/v8/finance/chart/QQQ?period1=${startTime}&period2=${endTime}&interval=1d`;
+                const data = await this.fetchWithProxy(url);
 
-            // アラート表示
-            showAlert(message) {
-                // ビジュアルアラート
-                const alertBar = document.getElementById('alertBar');
-                alertBar.textContent = message;
-                alertBar.style.display = 'block';
-                
-                // 音声アラート
-                if (this.settings.soundEnabled) {
-                    this.playAlertSound();
-                }
-                
-                // ブラウザ通知
-                if (this.settings.notificationEnabled && Notification.permission === 'granted') {
-                    new Notification('QQQ Pro Tracker アラート', {
-                        body: message,
-                        icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTYiIGZpbGw9IiMwMEQ0RkYiLz4KPHBhdGggZD0iTTMyIDQ4QzQwLjgzNjYgNDggNDggNDAuODM2NiA0OCAzMkM0OCAyMy4xNjM0IDQwLjgzNjYgMTYgMzIgMTZDMjMuMTYzNCAxNiAxNiAyMy4xNjM0IDE2IDMyQzE2IDQwLjgzNjYgMjMuMTYzNCA0OCAzMiA0OFoiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4='
-                    });
-                }
-                
-                // 10秒後に自動で非表示
-                setTimeout(() => {
-                    alertBar.style.display = 'none';
-                }, 10000);
-            },
-
-            // アラート音再生
-            playAlertSound() {
-                // AudioContextを使用してビープ音を生成
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
-                
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                
-                oscillator.frequency.value = 800; // 周波数
-                gainNode.gain.value = 0.3; // 音量
-                
-                oscillator.start();
-                oscillator.stop(audioContext.currentTime + 0.2); // 0.2秒間再生
-            },
-
-            // チャート初期化
-            initChart() {
-                const ctx = document.getElementById('priceChart').getContext('2d');
-                
-                this.chart = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: [],
-                        datasets: [
-                            {
-                                label: 'QQQ価格',
-                                data: [],
-                                borderColor: '#00d4ff',
-                                backgroundColor: 'rgba(0, 212, 255, 0.1)',
-                                borderWidth: 2,
-                                tension: 0.1,
-                                pointRadius: 0,
-                                pointHoverRadius: 4
-                            },
-                            {
-                                label: '200MA',
-                                data: [],
-                                borderColor: '#ffc107',
-                                borderWidth: 2,
-                                borderDash: [5, 5],
-                                tension: 0,
-                                pointRadius: 0,
-                                pointHoverRadius: 0
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        interaction: {
-                            mode: 'index',
-                            intersect: false
-                        },
-                        plugins: {
-                            legend: {
-                                display: true,
-                                labels: {
-                                    color: '#fff',
-                                    usePointStyle: true,
-                                    padding: 20
-                                }
-                            },
-                            tooltip: {
-                                backgroundColor: 'rgba(0, 0, 0, 0.9)',
-                                titleColor: '#fff',
-                                bodyColor: '#fff',
-                                borderColor: '#333',
-                                borderWidth: 1,
-                                padding: 10,
-                                displayColors: true,
-                                callbacks: {
-                                    label: function(context) {
-                                        return context.dataset.label + ': $' + context.parsed.y.toFixed(2);
-                                    }
-                                }
-                            }
-                        },
-                        scales: {
-                            x: {
-                                grid: {
-                                    color: 'rgba(255, 255, 255, 0.1)',
-                                    drawBorder: false
-                                },
-                                ticks: {
-                                    color: '#888',
-                                    maxRotation: 45,
-                                    minRotation: 45
-                                }
-                            },
-                            y: {
-                                grid: {
-                                    color: 'rgba(255, 255, 255, 0.1)',
-                                    drawBorder: false
-                                },
-                                ticks: {
-                                    color: '#888',
-                                    callback: function(value) {
-                                        return '$' + value.toFixed(0);
-                                    }
-                                }
-                            }
+                if (data?.chart?.result?.[0]) {
+                    const opens = data.chart.result[0].indicators.quote[0].open;
+                    for (const val of opens) {
+                        if (val !== null) {
+                            this.data.weekOpen = val;
+                            // Cache until end of Sunday
+                            const sunday = new Date(monday);
+                            sunday.setDate(sunday.getDate() + 6);
+                            sunday.setHours(23, 59, 59, 999);
+                            CacheManager.set('weekOpen', val, sunday.getTime() - Date.now());
+                            NumberAnimator.animate($('weekOpen'), val);
+                            this.updateRule5();
+                            break;
                         }
                     }
-                });
-            },
-
-            // チャート更新
-            updateChart() {
-                if (!this.chart || !this.chartData) return;
-                
-                this.chart.data.labels = this.chartData.labels;
-                this.chart.data.datasets[0].data = this.chartData.prices;
-                
-                // 200MAライン
-                if (this.data.ma200) {
-                    this.chart.data.datasets[1].data = new Array(this.chartData.prices.length).fill(this.data.ma200);
                 }
-                
-                this.chart.update();
-            },
+            } catch (error) {
+                this.log(`Week open error: ${error.message}`, 'error');
+            }
+        },
 
-            // チャート表示切替
-            toggleChart() {
-                const container = document.getElementById('chartContainer');
-                const toggle = document.getElementById('chartToggle');
-                
-                if (container.classList.contains('show')) {
-                    container.classList.remove('show');
-                    toggle.classList.remove('open');
-                } else {
-                    container.classList.add('show');
-                    toggle.classList.add('open');
-                    
-                    // 初回表示時にチャートデータ取得
-                    if (!this.chartData) {
-                        this.fetchChartData();
+        updateRule5() {
+            if (this.data.currentPrice && this.data.weekOpen) {
+                const weekChange = ((this.data.currentPrice - this.data.weekOpen) / this.data.weekOpen) * 100;
+                const el = $('rule5');
+                el.textContent = `${weekChange >= 0 ? '+' : ''}${weekChange.toFixed(2)}%`;
+                el.className = weekChange < 0 ? 'indicator-value negative' : 'indicator-value positive';
+            }
+        },
+
+        // ------- 5-year high (cached 24h) -------
+        async fetch5YearHigh() {
+            const cached = CacheManager.get('year5High');
+            if (cached) {
+                this.data.year5High = cached;
+                NumberAnimator.animate($('year5High'), cached);
+                this.update5YearDiff();
+                return;
+            }
+
+            try {
+                this.log('Fetching 5-year high');
+                const endDate = Math.floor(Date.now() / 1000);
+                const startDate = endDate - (5 * 365 * 24 * 60 * 60);
+                const url = `https://query1.finance.yahoo.com/v8/finance/chart/QQQ?period1=${startDate}&period2=${endDate}&interval=1wk`;
+                const data = await this.fetchWithProxy(url);
+
+                if (data?.chart?.result?.[0]) {
+                    const highs = data.chart.result[0].indicators.quote[0].high;
+                    const validHighs = highs.filter(h => h !== null);
+                    this.data.year5High = Math.max(...validHighs);
+                    CacheManager.set('year5High', this.data.year5High, 24 * 60 * 60 * 1000);
+                    NumberAnimator.animate($('year5High'), this.data.year5High);
+                    this.update5YearDiff();
+                }
+            } catch (error) {
+                this.log(`5Y high error: ${error.message}`, 'error');
+            }
+        },
+
+        update5YearDiff() {
+            if (this.data.currentPrice && this.data.year5High) {
+                const diff = ((this.data.currentPrice - this.data.year5High) / this.data.year5High) * 100;
+                const el = $('year5Diff');
+                el.textContent = `${diff >= 0 ? '+' : ''}${diff.toFixed(2)}%`;
+                el.className = diff < 0 ? 'detail-value negative' : 'detail-value positive';
+            }
+        },
+
+        // ------- Chart data -------
+        async fetchChartData() {
+            try {
+                this.log(`Fetching chart: ${this.chartPeriod}`);
+                const periods = {
+                    '1d': { interval: '5m', range: '1d' },
+                    '5d': { interval: '30m', range: '5d' },
+                    '1mo': { interval: '1h', range: '1mo' },
+                    '3mo': { interval: '1d', range: '3mo' },
+                    '6mo': { interval: '1d', range: '6mo' },
+                    '1y': { interval: '1wk', range: '1y' }
+                };
+                const config = periods[this.chartPeriod];
+                const url = `https://query1.finance.yahoo.com/v8/finance/chart/QQQ?range=${config.range}&interval=${config.interval}`;
+                const data = await this.fetchWithProxy(url);
+
+                if (data?.chart?.result?.[0]) {
+                    const result = data.chart.result[0];
+                    this.chartData = {
+                        labels: result.timestamp.map(t => this.formatTimestamp(t * 1000, this.chartPeriod)),
+                        prices: result.indicators.quote[0].close
+                    };
+                    this.updateChart();
+                }
+            } catch (error) {
+                this.log(`Chart error: ${error.message}`, 'error');
+            }
+        },
+
+        formatTimestamp(ts, period) {
+            const d = new Date(ts);
+            if (period === '1d') return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            if (period === '5d') return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        },
+
+        // ------- UI Update -------
+        updateUI() {
+            if (!this.data.currentPrice) return;
+
+            NumberAnimator.animate($('currentPrice'), this.data.currentPrice, '$');
+
+            const change = this.data.currentPrice - this.data.previousClose;
+            const pct = (change / this.data.previousClose) * 100;
+
+            const amtEl = $('changeAmount');
+            const pctEl = $('changePercent');
+            amtEl.textContent = `${change >= 0 ? '+' : ''}${change.toFixed(2)}`;
+            pctEl.textContent = `(${change >= 0 ? '+' : ''}${pct.toFixed(2)}%)`;
+            amtEl.className = change >= 0 ? 'change-amount positive' : 'change-amount negative';
+            pctEl.className = change >= 0 ? 'change-percent positive' : 'change-percent negative';
+
+            NumberAnimator.animate($('prevClose'), this.data.previousClose);
+            NumberAnimator.animate($('dayHigh'), this.data.dayHigh);
+            NumberAnimator.animate($('dayLow'), this.data.dayLow);
+            NumberAnimator.animate($('week52High'), this.data.week52High);
+            NumberAnimator.animate($('week52Low'), this.data.week52Low);
+            $('volume').textContent = this.formatVolume(this.data.volume);
+
+            const level12 = this.data.previousClose * 0.88;
+            const level18 = this.data.previousClose * 0.82;
+            NumberAnimator.animate($('level12'), level12);
+            NumberAnimator.animate($('level18'), level18);
+
+            if (this.data.currentPrice <= level18) {
+                $('level18').style.color = 'var(--red)';
+            } else if (this.data.currentPrice <= level12) {
+                $('level12').style.color = 'var(--orange)';
+            }
+        },
+
+        // ------- VIX update with gauge -------
+        updateVIX() {
+            if (!this.data.vix) return;
+
+            NumberAnimator.animate($('vixValue'), this.data.vix.value, '', 2);
+
+            const changeEl = $('vixChange');
+            changeEl.textContent = `${this.data.vix.change >= 0 ? '+' : ''}${this.data.vix.change.toFixed(2)} (${this.data.vix.changePercent >= 0 ? '+' : ''}${this.data.vix.changePercent.toFixed(1)}%)`;
+            changeEl.className = this.data.vix.change >= 0 ? 'vix-change negative' : 'vix-change positive'; // VIX up = bad
+
+            // Gauge bar (0 to 40 scale)
+            const pct = Math.min((this.data.vix.value / 40) * 100, 100);
+            const gauge = $('vixGauge');
+            let gaugeColor;
+            if (this.data.vix.value < 20) gaugeColor = 'var(--green)';
+            else if (this.data.vix.value < 30) gaugeColor = 'var(--yellow)';
+            else gaugeColor = 'var(--red)';
+            gauge.style.width = `${pct}%`;
+            gauge.style.background = gaugeColor;
+
+            // Status badge
+            const statusEl = $('vixStatus');
+            if (this.data.vix.value < 20) {
+                statusEl.textContent = 'Low Vol';
+                statusEl.className = 'vix-status vix-low';
+            } else if (this.data.vix.value < 30) {
+                statusEl.textContent = 'Mid Vol';
+                statusEl.className = 'vix-status vix-medium';
+            } else {
+                statusEl.textContent = 'High Vol';
+                statusEl.className = 'vix-status vix-high';
+            }
+        },
+
+        // ------- NQ Futures update -------
+        updateNQFutures() {
+            if (!this.data.nqFutures) return;
+
+            const priceEl = $('futuresPrice');
+            priceEl.textContent = `$${this.data.nqFutures.price.toFixed(2)}`;
+
+            const changeEl = $('futuresChange');
+            changeEl.textContent = `${this.data.nqFutures.change >= 0 ? '+' : ''}${this.data.nqFutures.change.toFixed(2)} (${this.data.nqFutures.changePercent >= 0 ? '+' : ''}${this.data.nqFutures.changePercent.toFixed(2)}%)`;
+            changeEl.className = this.data.nqFutures.change >= 0 ? 'futures-change positive' : 'futures-change negative';
+        },
+
+        // ------- Market status -------
+        updateMarketStatus() {
+            const now = new Date();
+            const nyTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+            const day = nyTime.getDay();
+            const hour = nyTime.getHours();
+            const minute = nyTime.getMinutes();
+
+            let status, cls;
+            if (day === 0 || day === 6) {
+                status = 'Weekend - Market Closed';
+                cls = 'market-closed';
+            } else if (hour < 9 || hour >= 16 || (hour === 9 && minute < 30)) {
+                status = 'After Hours';
+                cls = 'market-closed';
+            } else {
+                status = 'Market Open';
+                cls = 'market-open';
+            }
+
+            const el = $('marketStatus');
+            el.textContent = `${status} (NY ${nyTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })})`;
+            el.className = `market-status ${cls}`;
+        },
+
+        // ------- Alerts via toast -------
+        checkAlerts() {
+            if (!this.data.currentPrice || !this.data.previousClose) return;
+
+            const level12 = this.data.previousClose * 0.88;
+            const level18 = this.data.previousClose * 0.82;
+
+            if (this.data.currentPrice <= level18 && !this.alertsTriggered.level18) {
+                ToastManager.show('Below -18% level!', 'error', 10000);
+                this.alertsTriggered.level18 = true;
+            } else if (this.data.currentPrice > level18) this.alertsTriggered.level18 = false;
+
+            if (this.data.currentPrice <= level12 && !this.alertsTriggered.level12) {
+                ToastManager.show('Below -12% level!', 'warning', 10000);
+                this.alertsTriggered.level12 = true;
+            } else if (this.data.currentPrice > level12) this.alertsTriggered.level12 = false;
+
+            if (this.data.ma200 && this.data.currentPrice <= this.data.ma200 && !this.alertsTriggered.ma200) {
+                ToastManager.show('Below 200-day MA!', 'warning', 10000);
+                this.alertsTriggered.ma200 = true;
+            } else if (this.data.ma200 && this.data.currentPrice > this.data.ma200) this.alertsTriggered.ma200 = false;
+
+            if (this.data.weekOpen) {
+                const weekChange = ((this.data.currentPrice - this.data.weekOpen) / this.data.weekOpen) * 100;
+                if (weekChange <= -5 && !this.alertsTriggered.rule5) {
+                    ToastManager.show('-5% Rule triggered! Weekly drop exceeds 5%', 'error', 10000);
+                    this.alertsTriggered.rule5 = true;
+                } else if (weekChange > -5) this.alertsTriggered.rule5 = false;
+            }
+
+            if (this.data.vix) {
+                if (this.data.vix.value >= 35 && !this.alertsTriggered.vix35) {
+                    ToastManager.show('VIX above 35 - Extreme fear!', 'error', 10000);
+                    this.alertsTriggered.vix35 = true;
+                } else if (this.data.vix.value < 35) this.alertsTriggered.vix35 = false;
+
+                if (this.data.vix.value >= 30 && this.data.vix.value < 35 && !this.alertsTriggered.vix30) {
+                    ToastManager.show('VIX above 30 - High volatility', 'warning', 10000);
+                    this.alertsTriggered.vix30 = true;
+                } else if (this.data.vix.value < 30) this.alertsTriggered.vix30 = false;
+            }
+
+            // Sound + notification for any triggered alert
+            if (Object.values(this.alertsTriggered).some(v => v)) {
+                if (this.settings.soundEnabled) this.playAlertSound();
+                if (this.settings.notificationEnabled && Notification.permission === 'granted') {
+                    new Notification('QQQ Pro Tracker Alert', { body: 'Investment threshold alert triggered' });
+                }
+            }
+        },
+
+        playAlertSound() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.frequency.value = 800;
+                gain.gain.value = 0.3;
+                osc.start();
+                osc.stop(ctx.currentTime + 0.2);
+            } catch { /* silent fail */ }
+        },
+
+        // ------- Chart -------
+        initChart() {
+            const ctx = $('priceChart').getContext('2d');
+            this.chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'QQQ',
+                            data: [],
+                            borderColor: '#00d4ff',
+                            backgroundColor: (context) => {
+                                const chart = context.chart;
+                                const { ctx: c, chartArea } = chart;
+                                if (!chartArea) return 'rgba(0,212,255,0.05)';
+                                const gradient = c.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+                                gradient.addColorStop(0, 'rgba(0, 212, 255, 0.15)');
+                                gradient.addColorStop(1, 'rgba(0, 212, 255, 0)');
+                                return gradient;
+                            },
+                            fill: true,
+                            borderWidth: 2,
+                            tension: 0.3,
+                            pointRadius: 0,
+                            pointHoverRadius: 5,
+                            pointHoverBackgroundColor: '#00d4ff',
+                            pointHoverBorderColor: '#fff',
+                            pointHoverBorderWidth: 2
+                        },
+                        {
+                            label: '200MA',
+                            data: [],
+                            borderColor: 'rgba(255, 183, 64, 0.6)',
+                            borderWidth: 1.5,
+                            borderDash: [6, 4],
+                            tension: 0,
+                            pointRadius: 0,
+                            pointHoverRadius: 0
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            labels: {
+                                color: 'rgba(255,255,255,0.5)',
+                                usePointStyle: true,
+                                padding: 20,
+                                font: { family: 'Inter', size: 12 }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(10,14,26,0.95)',
+                            titleColor: 'rgba(255,255,255,0.7)',
+                            bodyColor: '#fff',
+                            borderColor: 'rgba(255,255,255,0.1)',
+                            borderWidth: 1,
+                            padding: 12,
+                            cornerRadius: 8,
+                            displayColors: true,
+                            titleFont: { family: 'Inter' },
+                            bodyFont: { family: 'Inter', weight: '600' },
+                            callbacks: {
+                                label: (ctx) => `${ctx.dataset.label}: $${ctx.parsed.y?.toFixed(2) || '---'}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255,255,255,0.04)', drawBorder: false },
+                            ticks: { color: 'rgba(255,255,255,0.3)', font: { family: 'Inter', size: 11 }, maxRotation: 45, minRotation: 45 }
+                        },
+                        y: {
+                            grid: { color: 'rgba(255,255,255,0.04)', drawBorder: false },
+                            ticks: { color: 'rgba(255,255,255,0.3)', font: { family: 'Inter', size: 11 }, callback: (v) => '$' + v.toFixed(0) }
+                        }
                     }
                 }
-            },
+            });
+        },
 
-            // 出来高フォーマット
-            formatVolume(volume) {
-                if (!volume) return '---';
-                
-                if (volume >= 1e9) {
-                    return (volume / 1e9).toFixed(2) + 'B';
-                } else if (volume >= 1e6) {
-                    return (volume / 1e6).toFixed(2) + 'M';
-                } else if (volume >= 1e3) {
-                    return (volume / 1e3).toFixed(2) + 'K';
-                }
-                
-                return volume.toString();
-            },
-
-            // デモデータ使用
-            useDemoData() {
-                this.log('デモモード: サンプルデータを使用します');
-                
-                // サンプルデータ設定
-                this.data = {
-                    currentPrice: 432.58,
-                    previousPrice: 435.20,
-                    previousClose: 435.20,
-                    dayHigh: 437.85,
-                    dayLow: 430.12,
-                    week52High: 508.59,
-                    week52Low: 362.45,
-                    volume: 45832100,
-                    ma200: 445.32,
-                    weekOpen: 440.25,
-                    vix: {
-                        value: 18.45,
-                        change: 1.23,
-                        changePercent: 7.14
-                    },
-                    nqFutures: {
-                        price: 18652.25,
-                        change: -125.50,
-                        changePercent: -0.67
-                    },
-                    year5High: 508.59
-                };
-                
-                // UI更新
-                this.updateUI();
-                this.updateVIX();
-                this.updateNQFutures();
-                this.updateMarketStatus();
-                
-                // デモチャートデータ
-                const labels = [];
-                const prices = [];
-                for (let i = 0; i < 50; i++) {
-                    labels.push(`${i}:00`);
-                    prices.push(430 + Math.random() * 10);
-                }
-                
-                this.chartData = { labels, prices };
-                this.updateChart();
-            },
-
-            // 自動更新開始
-            startAutoRefresh() {
-                // 既存のタイマーをクリア
-                if (this.refreshTimer) {
-                    clearInterval(this.refreshTimer);
-                }
-                
-                // 新しいタイマーを設定
-                this.refreshTimer = setInterval(() => {
-                    this.fetchData();
-                }, this.settings.refreshInterval * 1000);
-                
-                this.log(`自動更新開始: ${this.settings.refreshInterval}秒間隔`);
-            },
-
-            // 設定モーダル開く
-            openSettings() {
-                document.getElementById('settingsModal').style.display = 'block';
-                
-                // 現在の設定を反映
-                document.getElementById('refreshInterval').value = this.settings.refreshInterval;
-                document.getElementById('refreshValue').textContent = `${this.settings.refreshInterval}秒`;
-                document.getElementById('soundEnabled').checked = this.settings.soundEnabled;
-                document.getElementById('notificationEnabled').checked = this.settings.notificationEnabled;
-                document.getElementById('debugMode').checked = this.settings.debugMode;
-                document.getElementById('demoMode').checked = this.settings.demoMode;
-            },
-
-            // 設定モーダル閉じる
-            closeSettings() {
-                document.getElementById('settingsModal').style.display = 'none';
-            },
-
-            // デバッグログ
-            log(message, type = 'info') {
-                const timestamp = new Date().toLocaleTimeString('ja-JP');
-                const logMessage = `[${timestamp}] ${message}`;
-                
-                console.log(logMessage);
-                
-                if (this.settings.debugMode) {
-                    const debugPanel = document.getElementById('debugPanel');
-                    const logEntry = document.createElement('div');
-                    logEntry.style.color = type === 'error' ? '#ff4757' : (type === 'warn' ? '#ffc107' : '#0f0');
-                    logEntry.textContent = logMessage;
-                    debugPanel.appendChild(logEntry);
-                    debugPanel.scrollTop = debugPanel.scrollHeight;
-                }
+        updateChart() {
+            if (!this.chart || !this.chartData) return;
+            this.chart.data.labels = this.chartData.labels;
+            this.chart.data.datasets[0].data = this.chartData.prices;
+            if (this.data.ma200) {
+                this.chart.data.datasets[1].data = new Array(this.chartData.prices.length).fill(this.data.ma200);
             }
-        };
+            this.chart.update('none');
+        },
 
-        // アプリケーション開始
-        document.addEventListener('DOMContentLoaded', () => {
-            app.init();
-        });
+        // ------- Volume format -------
+        formatVolume(vol) {
+            if (!vol) return '---';
+            if (vol >= 1e9) return (vol / 1e9).toFixed(2) + 'B';
+            if (vol >= 1e6) return (vol / 1e6).toFixed(2) + 'M';
+            if (vol >= 1e3) return (vol / 1e3).toFixed(1) + 'K';
+            return vol.toString();
+        },
 
-        // モーダル外クリックで閉じる
-        window.onclick = (event) => {
-            const modal = document.getElementById('settingsModal');
-            if (event.target === modal) {
-                app.closeSettings();
+        // ------- Demo data -------
+        useDemoData() {
+            this.log('Using demo data');
+            this.data = {
+                currentPrice: 432.58, previousClose: 435.20,
+                dayHigh: 437.85, dayLow: 430.12,
+                week52High: 508.59, week52Low: 362.45,
+                volume: 45832100, ma200: 445.32,
+                weekOpen: 440.25,
+                vix: { value: 18.45, change: 1.23, changePercent: 7.14 },
+                nqFutures: { price: 18652.25, change: -125.50, changePercent: -0.67 },
+                year5High: 508.59
+            };
+
+            this.updateUI();
+            this.updateVIX();
+            this.updateNQFutures();
+            this.updateMarketStatus();
+            this.updateLastUpdated();
+
+            NumberAnimator.animate($('ma200'), this.data.ma200);
+            NumberAnimator.animate($('weekOpen'), this.data.weekOpen);
+            NumberAnimator.animate($('year5High'), this.data.year5High);
+            this.updateRule5();
+            this.update5YearDiff();
+
+            // Demo chart
+            const labels = [];
+            const prices = [];
+            let price = 430;
+            for (let i = 0; i < 50; i++) {
+                labels.push(`${9 + Math.floor(i * 7 / 50)}:${String((i * 7) % 60).padStart(2, '0')}`);
+                price += (Math.random() - 0.48) * 2;
+                prices.push(price);
             }
-        };
+            this.chartData = { labels, prices };
+            this.updateChart();
+
+            ToastManager.show('Demo mode active - displaying sample data', 'info');
+        },
+
+        // ------- Auto refresh -------
+        startAutoRefresh() {
+            if (this.refreshTimer) clearInterval(this.refreshTimer);
+            this.refreshTimer = setInterval(() => {
+                if (!this.settings.demoMode) this.fetchData();
+            }, this.settings.refreshInterval * 1000);
+            this.log(`Auto-refresh: ${this.settings.refreshInterval}s`);
+        },
+
+        // ------- Settings modal -------
+        openSettings() {
+            $('settingsModal').classList.add('open');
+        },
+        closeSettings() {
+            $('settingsModal').classList.remove('open');
+        },
+
+        // ------- Debug log -------
+        log(message, type = 'info') {
+            const ts = new Date().toLocaleTimeString('en-US');
+            const msg = `[${ts}] ${message}`;
+            console.log(msg);
+
+            if (this.settings.debugMode) {
+                const panel = $('debugPanel');
+                const entry = document.createElement('div');
+                entry.style.color = type === 'error' ? 'var(--red)' : type === 'warn' ? 'var(--yellow)' : 'var(--green)';
+                entry.textContent = msg;
+                panel.appendChild(entry);
+                panel.scrollTop = panel.scrollHeight;
+            }
+        }
+    };
+
+    // ------- Bootstrap -------
+    document.addEventListener('DOMContentLoaded', () => app.init());
+    window.addEventListener('click', (e) => {
+        if (e.target === $('settingsModal')) app.closeSettings();
+    });
     </script>
 </body>
 </html>
-
