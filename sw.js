@@ -1,4 +1,4 @@
-const CACHE_NAME = 'qqq-tracker-v2';
+const CACHE_NAME = 'qqq-tracker-v3';
 const ASSETS = [
   '/',
   '/index.html',
@@ -25,7 +25,7 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
 
   // Network-first for API calls
-  if (url.hostname.includes('yahoo') || url.hostname.includes('allorigins') || url.hostname.includes('corsproxy')) {
+  if (url.hostname.includes('yahoo') || url.hostname.includes('allorigins') || url.hostname.includes('corsproxy') || url.pathname.includes('/api/')) {
     e.respondWith(
       fetch(e.request).then(response => {
         const clone = response.clone();
@@ -36,7 +36,19 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // Cache-first for static assets
+  // Network-first for HTML (ensures updates are picked up)
+  if (e.request.mode === 'navigate' || url.pathname.endsWith('.html')) {
+    e.respondWith(
+      fetch(e.request).then(response => {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
+        return response;
+      }).catch(() => caches.match(e.request))
+    );
+    return;
+  }
+
+  // Cache-first for static assets (fonts, JS libraries)
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request).then(response => {
       const clone = response.clone();
