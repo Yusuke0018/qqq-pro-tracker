@@ -690,10 +690,11 @@
         currentMood: 'calm',
         chart: null, chartPeriod: '1d', refreshTimer: null,
 
+        // Detect if running on Vercel (or any http server) vs local file
+        isHosted: location.protocol === 'https:' || (location.protocol === 'http:' && location.hostname !== ''),
         corsProxies: [
             'https://api.allorigins.win/raw?url=',
             'https://corsproxy.io/?',
-            'https://proxy.cors.sh/',
             'https://thingproxy.freeboard.io/fetch/'
         ],
         currentProxyIndex: 0,
@@ -885,6 +886,29 @@
         },
 
         async fetchWithProxy(url) {
+            // 1) Try Vercel self-hosted proxy first (when deployed)
+            if (this.isHosted) {
+                try {
+                    const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
+                    this.log('Using Vercel proxy');
+                    const res = await fetch(proxyUrl);
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data?.chart) return data;
+                    }
+                } catch (e) {
+                    this.log(`Vercel proxy failed: ${e.message}`, 'warn');
+                }
+            }
+
+            // 2) Try direct fetch (works in some environments / extensions)
+            try {
+                this.log('Trying direct fetch');
+                const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+                if (res.ok) return await res.json();
+            } catch {}
+
+            // 3) Fallback to public CORS proxies
             let retries = 0;
             while (retries < this.corsProxies.length) {
                 const proxy = this.corsProxies[this.currentProxyIndex];
@@ -892,14 +916,16 @@
                     this.log(`Proxy: ${proxy}`);
                     const res = await fetch(proxy + encodeURIComponent(url));
                     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                    return await res.json();
+                    const data = await res.json();
+                    if (data?.chart || data?.meta) return data;
+                    throw new Error('Invalid response');
                 } catch (e) {
                     this.log(`Proxy failed: ${e.message}`, 'error');
                     this.currentProxyIndex = (this.currentProxyIndex + 1) % this.corsProxies.length;
                     retries++;
                 }
             }
-            throw new Error('All proxies failed');
+            throw new Error('All fetch methods failed');
         },
 
         // ---- 200MA (cached 24h) ----
