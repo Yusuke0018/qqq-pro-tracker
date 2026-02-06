@@ -398,13 +398,23 @@
             font-weight: 600; box-shadow: 0 0 16px var(--accent-glow);
         }
 
-        /* ====== Watchlist ====== */
+        /* ====== Watchlist / Heatmap ====== */
+        .watchlist-header-right { display: flex; gap: 8px; align-items: center; }
+        .view-toggle {
+            display: flex; background: rgba(255,255,255,0.04); border-radius: 20px; overflow: hidden; border: 1px solid rgba(255,255,255,0.08);
+        }
+        .view-toggle-btn {
+            background: none; border: none; color: var(--text-muted); padding: 5px 12px;
+            font-size: 12px; font-family: inherit; cursor: pointer; transition: all 0.25s;
+        }
+        .view-toggle-btn.active { background: var(--accent); color: #000; font-weight: 600; }
         .watchlist-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+        .watchlist-grid.heatmap-view { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 5px; }
         .watchlist-item {
             background: rgba(255,255,255,0.04); border: 1px solid var(--border-card); border-radius: 12px;
             padding: 14px; position: relative; transition: all 0.25s;
         }
-        .watchlist-item:hover { background: rgba(255,255,255,0.07); border-color: var(--border-glow); }
+        .watchlist-item:hover { border-color: var(--border-glow); filter: brightness(1.15); }
         .wl-ticker { font-size: 15px; font-weight: 700; color: var(--text-primary); letter-spacing: 0.5px; }
         .wl-name { font-size: 11px; color: var(--text-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .wl-price { font-size: 18px; font-weight: 700; color: var(--text-primary); margin-top: 6px; }
@@ -413,10 +423,10 @@
         .wl-change.negative { color: var(--red); }
         .wl-remove {
             position: absolute; top: 8px; right: 8px; background: none; border: none;
-            color: var(--text-muted); cursor: pointer; font-size: 16px; line-height: 1; padding: 4px;
+            color: rgba(255,255,255,0.5); cursor: pointer; font-size: 16px; line-height: 1; padding: 4px;
             opacity: 0; transition: opacity 0.2s;
         }
-        .watchlist-item:hover .wl-remove { opacity: 1; }
+        .watchlist-item:hover .wl-remove, .heatmap-cell:hover .wl-remove { opacity: 1; }
         .wl-remove:hover { color: var(--red); }
         .wl-loading { color: var(--text-muted); font-size: 12px; margin-top: 8px; }
         .add-ticker-btn {
@@ -425,7 +435,22 @@
             cursor: pointer; font-family: inherit; transition: all 0.25s;
         }
         .add-ticker-btn:hover { background: rgba(0,212,255,0.2); border-color: var(--accent); }
-        @media (max-width: 480px) { .watchlist-grid { grid-template-columns: repeat(2, 1fr); } }
+        /* Heatmap cells */
+        .heatmap-cell {
+            border-radius: 10px; padding: 12px 8px; text-align: center; position: relative;
+            border: none; transition: all 0.25s; min-height: 85px;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+        .heatmap-cell:hover { filter: brightness(1.25); transform: scale(1.04); z-index: 2; }
+        .hm-ticker { font-size: 13px; font-weight: 800; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.6); }
+        .hm-pct { font-size: 20px; font-weight: 800; color: #fff; text-shadow: 0 1px 5px rgba(0,0,0,0.6); margin-top: 4px; line-height: 1; }
+        .hm-price { font-size: 11px; color: rgba(255,255,255,0.75); margin-top: 4px; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+        @media (max-width: 480px) {
+            .watchlist-grid { grid-template-columns: repeat(2, 1fr); }
+            .watchlist-grid.heatmap-view { grid-template-columns: repeat(3, 1fr); gap: 3px; }
+            .heatmap-cell { min-height: 65px; padding: 8px 4px; }
+            .hm-ticker { font-size: 11px; } .hm-pct { font-size: 16px; }
+        }
 
         /* ====== Settings modal ====== */
         .modal {
@@ -645,16 +670,23 @@
         </div>
     </div>
 
-        <!-- Watchlist -->
+        <!-- Watchlist / Heatmap -->
         <div class="glass-card">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
                 <h2 class="section-title" style="margin:0">Watchlist</h2>
-                <button class="add-ticker-btn" onclick="app.openAddTicker()">+ Add</button>
+                <div class="watchlist-header-right">
+                    <div class="view-toggle">
+                        <button class="view-toggle-btn" data-view="list" onclick="app.setWatchlistView('list')">List</button>
+                        <button class="view-toggle-btn active" data-view="heatmap" onclick="app.setWatchlistView('heatmap')">Heatmap</button>
+                    </div>
+                    <button class="add-ticker-btn" onclick="app.openAddTicker()">+ Add</button>
+                </div>
             </div>
-            <div id="watchlistGrid" class="watchlist-grid">
-                <div class="skeleton" style="height:60px;border-radius:10px"></div>
-                <div class="skeleton" style="height:60px;border-radius:10px"></div>
-                <div class="skeleton" style="height:60px;border-radius:10px"></div>
+            <div id="watchlistGrid" class="watchlist-grid heatmap-view">
+                <div class="skeleton" style="height:85px;border-radius:10px"></div>
+                <div class="skeleton" style="height:85px;border-radius:10px"></div>
+                <div class="skeleton" style="height:85px;border-radius:10px"></div>
+                <div class="skeleton" style="height:85px;border-radius:10px"></div>
             </div>
         </div>
 
@@ -839,6 +871,7 @@
         defaultTickers: ['AAPL', 'NVDA', 'MSFT', 'GOOGL', 'AMZN', 'META', 'TSLA', 'AVGO'],
         watchlist: [],
         watchlistData: {},
+        watchlistView: 'heatmap', // 'list' or 'heatmap'
 
         // Detect if running on Vercel (or any http server) vs local file
         isHosted: location.protocol === 'https:' || (location.protocol === 'http:' && location.hostname !== ''),
@@ -1525,27 +1558,74 @@
             this.renderWatchlist();
         },
 
+        heatmapColor(pct) {
+            // Maps change% to color: deep red (-5%+) → red → gray (0%) → green → deep green (+5%+)
+            const clamped = Math.max(-5, Math.min(5, pct));
+            const t = (clamped + 5) / 10; // 0 to 1
+            let r, g, b;
+            if (t < 0.5) {
+                // Red to dark gray
+                const s = t / 0.5;
+                r = Math.round(180 + (40 - 180) * s);
+                g = Math.round(30 + (40 - 30) * s);
+                b = Math.round(30 + (45 - 30) * s);
+            } else {
+                // Dark gray to green
+                const s = (t - 0.5) / 0.5;
+                r = Math.round(40 + (15 - 40) * s);
+                g = Math.round(40 + (160 - 40) * s);
+                b = Math.round(45 + (60 - 45) * s);
+            }
+            return `rgb(${r},${g},${b})`;
+        },
+
+        setWatchlistView(view) {
+            this.watchlistView = view;
+            document.querySelectorAll('.view-toggle-btn').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+            const grid = $('watchlistGrid');
+            grid.classList.toggle('heatmap-view', view === 'heatmap');
+            this.renderWatchlist();
+        },
+
         renderWatchlist() {
             const grid = $('watchlistGrid');
             if (!this.watchlist.length) {
                 grid.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:16px;text-align:center">No tickers added. Click + Add to start.</div>';
                 return;
             }
-            grid.innerHTML = this.watchlist.map(ticker => {
-                const d = this.watchlistData[ticker];
-                if (!d) return `<div class="watchlist-item"><div class="wl-ticker">${ticker}</div><div class="wl-loading">Loading...</div><button class="wl-remove" onclick="app.removeTicker('${ticker}')">&times;</button></div>`;
-                const sign = d.change >= 0 ? '+' : '';
-                const cls = d.change >= 0 ? 'positive' : 'negative';
-                const sym = d.currency === 'JPY' ? '¥' : '$';
-                const dec = d.price > 1000 ? 0 : 2;
-                return `<div class="watchlist-item">
-                    <button class="wl-remove" onclick="app.removeTicker('${ticker}')">&times;</button>
-                    <div class="wl-ticker">${ticker}</div>
-                    <div class="wl-name">${d.name}</div>
-                    <div class="wl-price">${sym}${d.price.toFixed(dec)}</div>
-                    <div class="wl-change ${cls}">${sign}${d.change.toFixed(dec)} (${sign}${d.changePct.toFixed(2)}%)</div>
-                </div>`;
-            }).join('');
+
+            if (this.watchlistView === 'heatmap') {
+                grid.innerHTML = this.watchlist.map(ticker => {
+                    const d = this.watchlistData[ticker];
+                    if (!d) return `<div class="heatmap-cell" style="background:rgba(255,255,255,0.05)"><div class="hm-ticker">${ticker}</div><div class="hm-price" style="opacity:0.5">Loading...</div><button class="wl-remove" onclick="app.removeTicker('${ticker}')">&times;</button></div>`;
+                    const sign = d.changePct >= 0 ? '+' : '';
+                    const bg = this.heatmapColor(d.changePct);
+                    const sym = d.currency === 'JPY' ? '¥' : '$';
+                    const dec = d.price > 1000 ? 0 : 2;
+                    return `<div class="heatmap-cell" style="background:${bg}">
+                        <button class="wl-remove" onclick="app.removeTicker('${ticker}')">&times;</button>
+                        <div class="hm-ticker">${ticker}</div>
+                        <div class="hm-pct">${sign}${d.changePct.toFixed(2)}%</div>
+                        <div class="hm-price">${sym}${d.price.toFixed(dec)}</div>
+                    </div>`;
+                }).join('');
+            } else {
+                grid.innerHTML = this.watchlist.map(ticker => {
+                    const d = this.watchlistData[ticker];
+                    if (!d) return `<div class="watchlist-item"><div class="wl-ticker">${ticker}</div><div class="wl-loading">Loading...</div><button class="wl-remove" onclick="app.removeTicker('${ticker}')">&times;</button></div>`;
+                    const sign = d.change >= 0 ? '+' : '';
+                    const cls = d.change >= 0 ? 'positive' : 'negative';
+                    const sym = d.currency === 'JPY' ? '¥' : '$';
+                    const dec = d.price > 1000 ? 0 : 2;
+                    return `<div class="watchlist-item">
+                        <button class="wl-remove" onclick="app.removeTicker('${ticker}')">&times;</button>
+                        <div class="wl-ticker">${ticker}</div>
+                        <div class="wl-name">${d.name}</div>
+                        <div class="wl-price">${sym}${d.price.toFixed(dec)}</div>
+                        <div class="wl-change ${cls}">${sign}${d.change.toFixed(dec)} (${sign}${d.changePct.toFixed(2)}%)</div>
+                    </div>`;
+                }).join('');
+            }
         },
 
         openAddTicker() { $('addTickerModal').classList.add('open'); $('tickerInput').value = ''; $('tickerError').style.display = 'none'; setTimeout(() => $('tickerInput').focus(), 100); },
