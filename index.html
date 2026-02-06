@@ -55,7 +55,6 @@
             pointer-events: none;
             transition: opacity 2s ease, background 2s ease;
         }
-        body::after { z-index: 0; opacity: 0.35; }
 
         /* ===== 1. EUPHORIA - strong bull (vivid green aurora + rising arrows) ===== */
         body.mood-euphoria { background: linear-gradient(160deg, #021a0a 0%, #0a1e1a 40%, #041510 100%); }
@@ -67,9 +66,10 @@
             animation: euphoriaDrift 8s ease-in-out infinite alternate;
         }
         body.mood-euphoria::after {
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cpath d='M60 90 L60 30 M60 30 L45 50 M60 30 L75 50' stroke='%2300e68a' stroke-width='2.5' fill='none' opacity='0.25' stroke-linecap='round'/%3E%3Ccircle cx='60' cy='25' r='3' fill='%2300e68a' opacity='0.2'/%3E%3C/svg%3E");
-            background-size: 120px 120px;
-            animation: patternRise 15s linear infinite;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Cdefs%3E%3ClinearGradient id='ag' x1='0' y1='1' x2='0' y2='0'%3E%3Cstop offset='0' stop-color='%2300e68a' stop-opacity='0'/%3E%3Cstop offset='1' stop-color='%2300e68a' stop-opacity='0.6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M70 115 L70 35' stroke='url(%23ag)' stroke-width='4' fill='none' stroke-linecap='round'/%3E%3Cpath d='M70 35 L52 58' stroke='%2300e68a' stroke-width='4' fill='none' opacity='0.7' stroke-linecap='round'/%3E%3Cpath d='M70 35 L88 58' stroke='%2300e68a' stroke-width='4' fill='none' opacity='0.7' stroke-linecap='round'/%3E%3Ccircle cx='70' cy='28' r='5' fill='%2300e68a' opacity='0.5'/%3E%3Ccircle cx='30' cy='90' r='2' fill='%2300ffaa' opacity='0.3'/%3E%3Ccircle cx='110' cy='70' r='2' fill='%2300ffaa' opacity='0.3'/%3E%3Ccircle cx='20' cy='40' r='1.5' fill='%2300ffaa' opacity='0.2'/%3E%3Ccircle cx='120' cy='110' r='1.5' fill='%2300ffaa' opacity='0.2'/%3E%3C/svg%3E");
+            background-size: 140px 140px;
+            opacity: 1;
+            animation: patternRise 12s linear infinite;
         }
         @keyframes euphoriaDrift {
             0% { transform: translateY(0) scale(1); }
@@ -77,10 +77,10 @@
         }
         @keyframes patternRise {
             0% { background-position: 0 0; }
-            100% { background-position: 60px -120px; }
+            100% { background-position: 70px -140px; }
         }
 
-        /* ===== 2. CALM - stable (deep blue + gentle wave pattern) ===== */
+        /* ===== 2. CALM - stable (deep blue + gentle wave + dots) ===== */
         body.mood-calm { background: linear-gradient(160deg, #050a18 0%, #0a0e1a 40%, #06091a 100%); }
         body.mood-calm::before {
             background:
@@ -90,9 +90,10 @@
             animation: calmBreath 10s ease-in-out infinite alternate;
         }
         body.mood-calm::after {
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='100' viewBox='0 0 200 100'%3E%3Cpath d='M0 50 Q25 30 50 50 T100 50 T150 50 T200 50' stroke='%230088cc' stroke-width='1.5' fill='none' opacity='0.15'/%3E%3Cpath d='M0 65 Q25 45 50 65 T100 65 T150 65 T200 65' stroke='%234466aa' stroke-width='1' fill='none' opacity='0.1'/%3E%3C/svg%3E");
-            background-size: 200px 100px;
-            animation: waveScroll 20s linear infinite;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='120' viewBox='0 0 240 120'%3E%3Cpath d='M0 60 Q30 30 60 60 T120 60 T180 60 T240 60' stroke='%230099dd' stroke-width='2.5' fill='none' opacity='0.5'/%3E%3Cpath d='M0 80 Q30 55 60 80 T120 80 T180 80 T240 80' stroke='%235588bb' stroke-width='2' fill='none' opacity='0.35'/%3E%3Cpath d='M0 40 Q30 20 60 40 T120 40 T180 40 T240 40' stroke='%23336699' stroke-width='1.5' fill='none' opacity='0.25'/%3E%3Ccircle cx='60' cy='60' r='2' fill='%2300aaff' opacity='0.3'/%3E%3Ccircle cx='180' cy='60' r='2' fill='%2300aaff' opacity='0.3'/%3E%3Ccircle cx='120' cy='40' r='1.5' fill='%2300aaff' opacity='0.2'/%3E%3C/svg%3E");
+            background-size: 240px 120px;
+            opacity: 1;
+            animation: waveScroll 16s linear infinite;
         }
         @keyframes calmBreath {
             0% { opacity: 0.9; transform: scale(1); }
@@ -100,10 +101,10 @@
         }
         @keyframes waveScroll {
             0% { background-position: 0 0; }
-            100% { background-position: 200px 0; }
+            100% { background-position: 240px 0; }
         }
 
-        /* ===== 3. CAUTIOUS - elevated volatility (purple/violet + zigzag) ===== */
+        /* ===== 3. CAUTIOUS - elevated volatility (purple/violet + zigzag chart) ===== */
         body.mood-cautious { background: linear-gradient(160deg, #0e0520 0%, #120a22 40%, #0a0418 100%); }
         body.mood-cautious::before {
             background:
@@ -113,9 +114,10 @@
             animation: cautiousShift 6s ease-in-out infinite alternate;
         }
         body.mood-cautious::after {
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cpath d='M10 70 L30 30 L50 60 L70 20 L90 55' stroke='%239955ff' stroke-width='2' fill='none' opacity='0.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='70' cy='20' r='2.5' fill='%239955ff' opacity='0.15'/%3E%3C/svg%3E");
-            background-size: 100px 100px;
-            animation: patternJitter 12s linear infinite;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='120' viewBox='0 0 160 120'%3E%3Cdefs%3E%3ClinearGradient id='zg' x1='0' y1='0' x2='1' y2='0'%3E%3Cstop offset='0' stop-color='%239955ff' stop-opacity='0.2'/%3E%3Cstop offset='0.5' stop-color='%23bb77ff' stop-opacity='0.6'/%3E%3Cstop offset='1' stop-color='%239955ff' stop-opacity='0.2'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M5 85 L30 35 L55 70 L80 20 L105 55 L130 25 L155 60' stroke='url(%23zg)' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='80' cy='20' r='4' fill='%23bb77ff' opacity='0.4'/%3E%3Ccircle cx='130' cy='25' r='3' fill='%23aa66ff' opacity='0.3'/%3E%3Cline x1='80' y1='20' x2='80' y2='120' stroke='%239955ff' stroke-width='1' opacity='0.15' stroke-dasharray='4 4'/%3E%3Cpath d='M5 100 L155 100' stroke='%239955ff' stroke-width='1' opacity='0.2'/%3E%3C/svg%3E");
+            background-size: 160px 120px;
+            opacity: 1;
+            animation: patternJitter 10s ease-in-out infinite;
         }
         @keyframes cautiousShift {
             0% { transform: translateX(0); }
@@ -123,7 +125,7 @@
         }
         @keyframes patternJitter {
             0% { background-position: 0 0; }
-            50% { background-position: 15px -10px; }
+            50% { background-position: 20px -15px; }
             100% { background-position: 0 0; }
         }
 
@@ -137,9 +139,10 @@
             animation: fearFlicker 4s ease-in-out infinite alternate;
         }
         body.mood-fear::after {
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='120' viewBox='0 0 80 120'%3E%3Cpath d='M45 10 L30 55 L45 50 L32 100' stroke='%23ffaa00' stroke-width='2.5' fill='none' opacity='0.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M55 25 L48 52 L55 49 L50 75' stroke='%23ff8800' stroke-width='1.5' fill='none' opacity='0.12' stroke-linecap='round'/%3E%3C/svg%3E");
-            background-size: 80px 120px;
-            animation: fearBolts 5s ease-in-out infinite;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='160' viewBox='0 0 120 160'%3E%3Cpath d='M65 10 L42 72 L62 66 L40 140' stroke='%23ffbb33' stroke-width='4' fill='none' stroke-linecap='round' stroke-linejoin='round' opacity='0.6'/%3E%3Cpath d='M85 30 L72 75 L84 70 L75 110' stroke='%23ff9900' stroke-width='3' fill='none' stroke-linecap='round' opacity='0.35'/%3E%3Ccircle cx='40' cy='140' r='4' fill='%23ffaa00' opacity='0.35'/%3E%3Ccircle cx='65' cy='10' r='3' fill='%23ffcc44' opacity='0.3'/%3E%3Cline x1='15' y1='50' x2='35' y2='55' stroke='%23ffaa00' stroke-width='1.5' opacity='0.25' stroke-linecap='round'/%3E%3Cline x1='90' y1='120' x2='110' y2='115' stroke='%23ffaa00' stroke-width='1.5' opacity='0.25' stroke-linecap='round'/%3E%3C/svg%3E");
+            background-size: 120px 160px;
+            opacity: 1;
+            animation: fearBolts 3s ease-in-out infinite;
         }
         @keyframes fearFlicker {
             0% { opacity: 0.85; }
@@ -148,12 +151,12 @@
             100% { opacity: 0.95; }
         }
         @keyframes fearBolts {
-            0%, 100% { opacity: 0.35; }
-            15% { opacity: 0.6; }
-            20% { opacity: 0.2; }
-            50% { opacity: 0.4; }
-            70% { opacity: 0.55; }
-            75% { opacity: 0.15; }
+            0%, 100% { opacity: 0.8; }
+            15% { opacity: 1; }
+            20% { opacity: 0.4; }
+            50% { opacity: 0.9; }
+            70% { opacity: 1; }
+            75% { opacity: 0.3; }
         }
 
         /* ===== 5. PANIC - crash (deep red + cracking/shatter + pulse) ===== */
@@ -166,8 +169,9 @@
             animation: panicPulse 2.5s ease-in-out infinite;
         }
         body.mood-panic::after {
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 150 150'%3E%3Cpath d='M75 15 L65 75 L45 70 L75 135 L85 75 L105 80 Z' stroke='%23ff1a40' stroke-width='1.5' fill='none' opacity='0.15'/%3E%3Cpath d='M30 50 L55 55 M95 45 L120 40' stroke='%23ff0033' stroke-width='1' opacity='0.12' stroke-linecap='round'/%3E%3Cpath d='M20 100 L50 90 M100 95 L130 105' stroke='%23cc0022' stroke-width='1' opacity='0.1' stroke-linecap='round'/%3E%3Ccircle cx='75' cy='75' r='35' stroke='%23ff1a40' stroke-width='0.8' fill='none' opacity='0.08'/%3E%3Ccircle cx='75' cy='75' r='55' stroke='%23ff0033' stroke-width='0.5' fill='none' opacity='0.05'/%3E%3C/svg%3E");
-            background-size: 150px 150px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'%3E%3Cpath d='M90 15 L78 85 L55 78 L90 165 L102 85 L125 92 Z' stroke='%23ff2244' stroke-width='3' fill='%23ff1133' fill-opacity='0.08' opacity='0.5'/%3E%3Cpath d='M30 60 L65 68' stroke='%23ff0033' stroke-width='2.5' opacity='0.4' stroke-linecap='round'/%3E%3Cpath d='M115 55 L150 48' stroke='%23ff0033' stroke-width='2.5' opacity='0.4' stroke-linecap='round'/%3E%3Cpath d='M25 120 L60 110' stroke='%23cc0022' stroke-width='2' opacity='0.3' stroke-linecap='round'/%3E%3Cpath d='M120 115 L155 125' stroke='%23cc0022' stroke-width='2' opacity='0.3' stroke-linecap='round'/%3E%3Ccircle cx='90' cy='90' r='40' stroke='%23ff2244' stroke-width='1.5' fill='none' opacity='0.2'/%3E%3Ccircle cx='90' cy='90' r='65' stroke='%23ff0033' stroke-width='1' fill='none' opacity='0.12'/%3E%3Ccircle cx='90' cy='90' r='85' stroke='%23cc0022' stroke-width='0.8' fill='none' opacity='0.08'/%3E%3C/svg%3E");
+            background-size: 180px 180px;
+            opacity: 1;
             animation: panicShatter 1.5s ease-in-out infinite;
         }
         @keyframes panicPulse {
@@ -175,10 +179,10 @@
             50% { opacity: 0.6; }
         }
         @keyframes panicShatter {
-            0%, 100% { opacity: 0.35; transform: scale(1); }
-            25% { opacity: 0.55; transform: scale(1.01); }
-            50% { opacity: 0.25; transform: scale(0.99); }
-            75% { opacity: 0.5; transform: scale(1.005); }
+            0%, 100% { opacity: 0.8; transform: scale(1); }
+            25% { opacity: 1; transform: scale(1.02); }
+            50% { opacity: 0.5; transform: scale(0.98); }
+            75% { opacity: 0.9; transform: scale(1.01); }
         }
 
         /* Mood indicator label */
