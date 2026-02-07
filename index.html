@@ -2590,28 +2590,60 @@
             this.log('Fetching earnings calendar');
             const tickers = [...this.mag7, ...this.watchlist.filter(t => !this.mag7.includes(t))];
             const unique = [...new Set(tickers)].slice(0, 15);
-            const results = await Promise.allSettled(
-                unique.map(t =>
-                    this.fetchJSONWithProxy(`https://query2.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(t)}?modules=calendarEvents`)
-                )
-            );
             this.earningsData = [];
-            results.forEach((r, i) => {
-                if (r.status === 'fulfilled' && r.value?.quoteSummary?.result?.[0]?.calendarEvents?.earnings) {
-                    const e = r.value.quoteSummary.result[0].calendarEvents.earnings;
-                    const dates = e.earningsDate;
-                    if (dates && dates.length > 0) {
-                        this.earningsData.push({
-                            ticker: unique[i],
-                            name: this.watchlistData[unique[i]]?.name || unique[i],
-                            date: dates[0].raw * 1000,
-                            estimate: e.earningsAverage?.fmt || null,
-                            low: e.earningsLow?.fmt || null,
-                            high: e.earningsHigh?.fmt || null
-                        });
-                    }
+
+            // Approach 1: batch v7/finance/quote (most reliable, single request)
+            try {
+                const symbols = unique.join(',');
+                const data = await this.fetchJSONWithProxy(
+                    `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbols)}`
+                );
+                if (data?.quoteResponse?.result?.length) {
+                    data.quoteResponse.result.forEach(q => {
+                        const ts = q.earningsTimestamp || q.earningsTimestampStart;
+                        if (ts) {
+                            this.earningsData.push({
+                                ticker: q.symbol,
+                                name: q.shortName || q.longName || q.symbol,
+                                date: ts * 1000,
+                                estimate: q.epsForward ? q.epsForward.toFixed(2) : (q.epsCurrentYear ? q.epsCurrentYear.toFixed(2) : null)
+                            });
+                        }
+                    });
+                    this.log(`Earnings: v7 batch returned ${this.earningsData.length} results`);
                 }
-            });
+            } catch (e) { this.log(`Earnings v7 batch failed: ${e.message}`, 'warn'); }
+
+            // Approach 2: individual quoteSummary fallback (try v6 then v10)
+            if (!this.earningsData.length) {
+                this.log('Trying quoteSummary fallback');
+                const endpoints = [
+                    t => `https://query1.finance.yahoo.com/v6/finance/quoteSummary/${t}?modules=calendarEvents`,
+                    t => `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${t}?modules=calendarEvents`
+                ];
+                for (const makUrl of endpoints) {
+                    if (this.earningsData.length) break;
+                    const results = await Promise.allSettled(
+                        unique.map(t => this.fetchJSONWithProxy(makUrl(encodeURIComponent(t))))
+                    );
+                    results.forEach((r, i) => {
+                        if (r.status === 'fulfilled' && r.value?.quoteSummary?.result?.[0]?.calendarEvents?.earnings) {
+                            const e = r.value.quoteSummary.result[0].calendarEvents.earnings;
+                            const dates = e.earningsDate;
+                            if (dates?.length > 0) {
+                                this.earningsData.push({
+                                    ticker: unique[i],
+                                    name: this.watchlistData[unique[i]]?.name || unique[i],
+                                    date: dates[0].raw * 1000,
+                                    estimate: e.earningsAverage?.fmt || null
+                                });
+                            }
+                        }
+                    });
+                    if (this.earningsData.length) this.log(`Earnings: quoteSummary returned ${this.earningsData.length} results`);
+                }
+            }
+
             this.earningsData.sort((a, b) => a.date - b.date);
             this.renderEarningsCalendar();
         },
