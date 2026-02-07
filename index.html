@@ -428,6 +428,14 @@
         }
         .watchlist-item:hover .wl-remove, .heatmap-cell:hover .wl-remove { opacity: 1; }
         .wl-remove:hover { color: var(--red); }
+        .wl-lock {
+            position: absolute; top: 6px; right: 6px; font-size: 10px;
+            opacity: 0; transition: opacity 0.2s; cursor: default; z-index: 2;
+        }
+        .watchlist-item:hover .wl-lock, .heatmap-cell:hover .wl-lock { opacity: 0.5; }
+        .heatmap-cell.dragging, .watchlist-item.dragging { opacity: 0.4; transform: scale(0.95); }
+        .heatmap-cell.drag-over, .watchlist-item.drag-over { outline: 2px solid var(--accent); outline-offset: -2px; }
+        .heatmap-cell[draggable="false"], .watchlist-item[draggable="false"] { cursor: default; }
         .wl-loading { color: var(--text-muted); font-size: 12px; margin-top: 8px; }
         .add-ticker-btn {
             background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.2); color: var(--accent);
@@ -1049,6 +1057,7 @@
         chart: null, chartPeriod: '1d', refreshTimer: null,
 
         // Watchlist
+        mag7: ['AAPL', 'NVDA', 'MSFT', 'GOOGL', 'AMZN', 'META', 'TSLA'],
         defaultTickers: ['AAPL', 'NVDA', 'MSFT', 'GOOGL', 'AMZN', 'META', 'TSLA', 'AVGO'],
         watchlist: [],
         watchlistData: {},
@@ -1742,6 +1751,8 @@
                 const saved = localStorage.getItem('qqq_watchlist');
                 this.watchlist = saved ? JSON.parse(saved) : [...this.defaultTickers];
             } catch { this.watchlist = [...this.defaultTickers]; }
+            // Mag7は必ず含める
+            this.mag7.forEach(t => { if (!this.watchlist.includes(t)) this.watchlist.unshift(t); });
         },
 
         saveWatchlist() {
@@ -1810,38 +1821,49 @@
                 return;
             }
 
-            if (this.watchlistView === 'heatmap') {
-                grid.innerHTML = this.watchlist.map(ticker => {
-                    const d = this.watchlistData[ticker];
-                    if (!d) return `<div class="heatmap-cell" style="background:rgba(255,255,255,0.05)"><div class="hm-ticker">${ticker}</div><div class="hm-price" style="opacity:0.5">Loading...</div><button class="wl-remove" onclick="event.stopPropagation();app.removeTicker('${ticker}')">&times;</button></div>`;
+            // Mag7を先頭固定、それ以外を後ろに
+            const sorted = [...this.mag7.filter(t => this.watchlist.includes(t)), ...this.watchlist.filter(t => !this.mag7.includes(t))];
+
+            const makeCell = (ticker, isHeatmap) => {
+                const d = this.watchlistData[ticker];
+                const isMag7 = this.mag7.includes(ticker);
+                const draggable = !isMag7;
+                const dragAttr = draggable ? `draggable="true"` : `draggable="false"`;
+                const removeBtn = isMag7
+                    ? `<span class="wl-lock" title="Magnificent 7 (固定)">🔒</span>`
+                    : `<button class="wl-remove" onclick="event.stopPropagation();app.removeTicker('${ticker}')">&times;</button>`;
+
+                if (isHeatmap) {
+                    if (!d) return `<div class="heatmap-cell" data-ticker="${ticker}" ${dragAttr} style="background:rgba(255,255,255,0.05)"><div class="hm-ticker">${ticker}</div><div class="hm-price" style="opacity:0.5">Loading...</div>${removeBtn}</div>`;
                     const sign = d.changePct >= 0 ? '+' : '';
                     const bg = this.heatmapColor(d.changePct);
                     const sym = d.currency === 'JPY' ? '¥' : '$';
                     const dec = d.price > 1000 ? 0 : 2;
-                    return `<div class="heatmap-cell" style="background:${bg};cursor:pointer" onclick="app.showTickerDetail('${ticker}')">
-                        <button class="wl-remove" onclick="event.stopPropagation();app.removeTicker('${ticker}')">&times;</button>
+                    return `<div class="heatmap-cell" data-ticker="${ticker}" ${dragAttr} style="background:${bg};cursor:pointer" onclick="app.showTickerDetail('${ticker}')">
+                        ${removeBtn}
                         <div class="hm-ticker">${ticker}</div>
                         <div class="hm-pct">${sign}${d.changePct.toFixed(2)}%</div>
                         <div class="hm-price">${sym}${d.price.toFixed(dec)}</div>
                     </div>`;
-                }).join('');
-            } else {
-                grid.innerHTML = this.watchlist.map(ticker => {
-                    const d = this.watchlistData[ticker];
-                    if (!d) return `<div class="watchlist-item"><div class="wl-ticker">${ticker}</div><div class="wl-loading">Loading...</div><button class="wl-remove" onclick="event.stopPropagation();app.removeTicker('${ticker}')">&times;</button></div>`;
+                } else {
+                    if (!d) return `<div class="watchlist-item" data-ticker="${ticker}" ${dragAttr}><div class="wl-ticker">${ticker}</div><div class="wl-loading">Loading...</div>${removeBtn}</div>`;
                     const sign = d.change >= 0 ? '+' : '';
                     const cls = d.change >= 0 ? 'positive' : 'negative';
                     const sym = d.currency === 'JPY' ? '¥' : '$';
                     const dec = d.price > 1000 ? 0 : 2;
-                    return `<div class="watchlist-item" style="cursor:pointer" onclick="app.showTickerDetail('${ticker}')">
-                        <button class="wl-remove" onclick="event.stopPropagation();app.removeTicker('${ticker}')">&times;</button>
+                    return `<div class="watchlist-item" data-ticker="${ticker}" ${dragAttr} style="cursor:pointer" onclick="app.showTickerDetail('${ticker}')">
+                        ${removeBtn}
                         <div class="wl-ticker">${ticker}</div>
                         <div class="wl-name">${d.name}</div>
                         <div class="wl-price">${sym}${d.price.toFixed(dec)}</div>
                         <div class="wl-change ${cls}">${sign}${d.change.toFixed(dec)} (${sign}${d.changePct.toFixed(2)}%)</div>
                     </div>`;
-                }).join('');
-            }
+                }
+            };
+
+            const isHeatmap = this.watchlistView === 'heatmap';
+            grid.innerHTML = sorted.map(t => makeCell(t, isHeatmap)).join('');
+            this.setupDragAndDrop(grid);
         },
 
         async showTickerDetail(ticker) {
@@ -1943,12 +1965,61 @@
             $('addTickerConfirm').textContent = 'Add to Watchlist'; $('addTickerConfirm').disabled = false;
         },
 
+        // ---- Drag & Drop reorder (non-Mag7 only) ----
+        setupDragAndDrop(grid) {
+            let dragTicker = null;
+            grid.querySelectorAll('[draggable="true"]').forEach(el => {
+                el.addEventListener('dragstart', (e) => {
+                    dragTicker = el.dataset.ticker;
+                    el.classList.add('dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', dragTicker);
+                });
+                el.addEventListener('dragend', () => {
+                    el.classList.remove('dragging');
+                    grid.querySelectorAll('.drag-over').forEach(x => x.classList.remove('drag-over'));
+                    dragTicker = null;
+                });
+            });
+            grid.querySelectorAll('[data-ticker]').forEach(el => {
+                el.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    const target = el.dataset.ticker;
+                    if (!dragTicker || dragTicker === target || this.mag7.includes(target)) return;
+                    e.dataTransfer.dropEffect = 'move';
+                    el.classList.add('drag-over');
+                });
+                el.addEventListener('dragleave', () => el.classList.remove('drag-over'));
+                el.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    el.classList.remove('drag-over');
+                    const target = el.dataset.ticker;
+                    if (!dragTicker || dragTicker === target || this.mag7.includes(target)) return;
+                    // Mag7以外の部分だけ並び替え
+                    const nonMag7 = this.watchlist.filter(t => !this.mag7.includes(t));
+                    const fromIdx = nonMag7.indexOf(dragTicker);
+                    const toIdx = nonMag7.indexOf(target);
+                    if (fromIdx === -1 || toIdx === -1) return;
+                    nonMag7.splice(fromIdx, 1);
+                    nonMag7.splice(toIdx, 0, dragTicker);
+                    this.watchlist = [...this.mag7.filter(t => this.watchlist.includes(t)), ...nonMag7];
+                    this.saveWatchlist();
+                    this.renderWatchlist();
+                });
+            });
+        },
+
         removeTicker(ticker) {
+            if (this.mag7.includes(ticker)) {
+                ToastManager.show(`${ticker} はMagnificent 7のため削除できません`, 'warning');
+                return;
+            }
+            if (!confirm(`${ticker} をウォッチリストから削除しますか？`)) return;
             this.watchlist = this.watchlist.filter(t => t !== ticker);
             delete this.watchlistData[ticker];
             this.saveWatchlist();
             this.renderWatchlist();
-            ToastManager.show(`${ticker} removed`, 'info');
+            ToastManager.show(`${ticker} を削除しました`, 'info');
         },
 
         // ---- Crypto ----
