@@ -1161,6 +1161,8 @@
                 const saved = localStorage.getItem('qqq_settings');
                 if (saved) Object.assign(this.settings, JSON.parse(saved));
             } catch {}
+            // Always start with demo mode off — let fetchData decide
+            this.settings.demoMode = false;
             // Apply to DOM
             $('refreshInterval').value = this.settings.refreshInterval;
             $('refreshValue').textContent = `${this.settings.refreshInterval}s`;
@@ -1259,6 +1261,13 @@
                 ]);
 
                 if (qqqData?.chart?.result?.[0]) {
+                    // Auto-recover from demo mode on successful fetch
+                    if (this.settings.demoMode) {
+                        this.settings.demoMode = false;
+                        $('demoMode').checked = false;
+                        $('demoBanner').classList.remove('show');
+                        this.saveSettings();
+                    }
                     const r = qqqData.chart.result[0], q = r.indicators.quote[0], m = r.meta;
                     this.data.currentPrice = m.regularMarketPrice;
                     this.data.previousClose = m.previousClose;
@@ -1318,7 +1327,7 @@
                     $('demoMode').checked = true;
                     $('demoBanner').classList.add('show');
                     this.useDemoData();
-                    this.saveSettings();
+                    // Don't save to localStorage — allow auto-recovery on next load
                 }
             }
         },
