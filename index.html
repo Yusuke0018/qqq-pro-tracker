@@ -1231,17 +1231,27 @@
             this.setupEventListeners();
             if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
             this.loadWatchlist();
-            this.fetchData();
-            this.startAutoRefresh();
             this.initChart();
-            this.fetchChartData();
-            this.fetchWatchlistData();
-            this.fetchCryptoData();
-            this.fetchNews();
-            this.fetchSimulatorData();
-            this.fetchEarningsCalendar();
             this.updateMarketStatus();
-            // PWA
+
+            // Phase 1: Critical data (immediate)
+            this.fetchData();
+
+            // Phase 2: Watchlist + crypto (after 2s)
+            setTimeout(() => {
+                this.fetchWatchlistData();
+                this.fetchCryptoData();
+                this.fetchChartData();
+            }, 2000);
+
+            // Phase 3: Non-critical (after 5s)
+            setTimeout(() => {
+                this.fetchNews();
+                this.fetchSimulatorData();
+                this.fetchEarningsCalendar();
+            }, 5000);
+
+            this.startAutoRefresh();
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.register('sw.js').catch(() => {});
             }
@@ -1904,7 +1914,16 @@
 
         startAutoRefresh() {
             if (this.refreshTimer) clearInterval(this.refreshTimer);
-            this.refreshTimer = setInterval(() => { if (!this.settings.demoMode) { this.fetchData(); this.fetchWatchlistData(); this.fetchCryptoData(); this.fetchNews(); } }, this.settings.refreshInterval * 1000);
+            this.refreshCount = 0;
+            this.refreshTimer = setInterval(() => {
+                if (this.settings.demoMode) return;
+                this.refreshCount++;
+                this.fetchData();
+                // Watchlist/crypto every 2nd refresh
+                if (this.refreshCount % 2 === 0) { this.fetchWatchlistData(); this.fetchCryptoData(); }
+                // News every 4th refresh
+                if (this.refreshCount % 4 === 0) this.fetchNews();
+            }, this.settings.refreshInterval * 1000);
         },
 
         openSettings() { $('settingsModal').classList.add('open'); },
@@ -2250,29 +2269,41 @@
 
         // ---- News ----
         async fetchNews() {
+            // Cache 5min
+            const cached = CacheManager.get('news');
+            if (cached) {
+                this.newsData = cached;
+                this.renderNews();
+                this.buildNewsTabs();
+                return;
+            }
+
             this.log('Fetching market news');
             try {
-                const tickers = ['QQQ', ...this.watchlist.slice(0, 6)];
+                // Only QQQ + top 3 watchlist (not 7) to reduce requests
+                const tickers = ['QQQ', ...this.watchlist.slice(0, 3)];
                 const uniqueTickers = [...new Set(tickers)];
-                const results = await Promise.allSettled(
-                    uniqueTickers.map(t =>
-                        this.fetchJSONWithProxy(`https://query2.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(t)}&newsCount=5&quotesCount=0`)
-                    )
-                );
                 const allNews = [];
                 const seen = new Set();
-                results.forEach((r, i) => {
-                    if (r.status === 'fulfilled' && r.value?.news) {
-                        r.value.news.forEach(item => {
-                            if (!seen.has(item.uuid)) {
-                                seen.add(item.uuid);
-                                allNews.push({ ...item, relatedTicker: uniqueTickers[i] });
-                            }
-                        });
-                    }
-                });
+                // Sequential to avoid rate limiting
+                for (let i = 0; i < uniqueTickers.length; i++) {
+                    try {
+                        const data = await this.fetchJSONWithProxy(
+                            `https://query2.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(uniqueTickers[i])}&newsCount=5&quotesCount=0`
+                        );
+                        if (data?.news) {
+                            data.news.forEach(item => {
+                                if (!seen.has(item.uuid)) {
+                                    seen.add(item.uuid);
+                                    allNews.push({ ...item, relatedTicker: uniqueTickers[i] });
+                                }
+                            });
+                        }
+                    } catch {}
+                }
                 allNews.sort((a, b) => (b.providerPublishTime || 0) - (a.providerPublishTime || 0));
-                this.newsData = allNews.slice(0, 25);
+                this.newsData = allNews.slice(0, 20);
+                if (this.newsData.length) CacheManager.set('news', this.newsData, 300000); // 5min
                 this.renderNews();
                 this.buildNewsTabs();
             } catch (e) {
@@ -2491,25 +2522,38 @@
 
         // ---- DCA Simulator ----
         async fetchSimulatorData() {
+            // Check cache first (4h TTL)
+            const cached = CacheManager.get('simData');
+            if (cached) {
+                this.simData = cached;
+                this.renderSimulator();
+                this.log('Simulator: loaded from cache');
+                return;
+            }
+
             this.log('Fetching simulator data');
             const end = Math.floor(Date.now() / 1000);
             const start = end - 5 * 365 * 86400;
             const etfs = ['QQQ', 'QLD', 'TQQQ'];
-            const results = await Promise.allSettled(
-                etfs.map(t => this.fetchWithProxy(
-                    `https://query1.finance.yahoo.com/v8/finance/chart/${t}?period1=${start}&period2=${end}&interval=1mo`
-                ))
-            );
-            results.forEach((r, i) => {
-                if (r.status === 'fulfilled' && r.value?.chart?.result?.[0]) {
-                    const res = r.value.chart.result[0];
-                    const timestamps = res.timestamp || [];
-                    const closes = res.indicators.quote[0].close || [];
-                    this.simData[etfs[i]] = timestamps.map((t, j) => ({
-                        date: t, price: closes[j]
-                    })).filter(p => p.price !== null);
-                }
-            });
+            // Sequential fetch to avoid rate limiting
+            for (const etf of etfs) {
+                try {
+                    const data = await this.fetchWithProxy(
+                        `https://query1.finance.yahoo.com/v8/finance/chart/${etf}?period1=${start}&period2=${end}&interval=1mo`
+                    );
+                    if (data?.chart?.result?.[0]) {
+                        const res = data.chart.result[0];
+                        const timestamps = res.timestamp || [];
+                        const closes = res.indicators.quote[0].close || [];
+                        this.simData[etf] = timestamps.map((t, j) => ({
+                            date: t, price: closes[j]
+                        })).filter(p => p.price !== null);
+                    }
+                } catch (e) { this.log(`Simulator ${etf} failed: ${e.message}`, 'warn'); }
+            }
+            if (Object.keys(this.simData).length) {
+                CacheManager.set('simData', this.simData, 14400000); // 4h cache
+            }
             this.renderSimulator();
         },
 
@@ -2587,12 +2631,21 @@
 
         // ---- Earnings Calendar ----
         async fetchEarningsCalendar() {
+            // Check cache first (12h TTL)
+            const cached = CacheManager.get('earnings');
+            if (cached) {
+                this.earningsData = cached;
+                this.renderEarningsCalendar();
+                this.log('Earnings: loaded from cache');
+                return;
+            }
+
             this.log('Fetching earnings calendar');
             const tickers = [...this.mag7, ...this.watchlist.filter(t => !this.mag7.includes(t))];
-            const unique = [...new Set(tickers)].slice(0, 15);
+            const unique = [...new Set(tickers)].slice(0, 12);
             this.earningsData = [];
 
-            // Approach 1: batch v7/finance/quote (most reliable, single request)
+            // Single batch request via v7/finance/quote
             try {
                 const symbols = unique.join(',');
                 const data = await this.fetchJSONWithProxy(
@@ -2612,39 +2665,12 @@
                     });
                     this.log(`Earnings: v7 batch returned ${this.earningsData.length} results`);
                 }
-            } catch (e) { this.log(`Earnings v7 batch failed: ${e.message}`, 'warn'); }
+            } catch (e) { this.log(`Earnings fetch failed: ${e.message}`, 'warn'); }
 
-            // Approach 2: individual quoteSummary fallback (try v6 then v10)
-            if (!this.earningsData.length) {
-                this.log('Trying quoteSummary fallback');
-                const endpoints = [
-                    t => `https://query1.finance.yahoo.com/v6/finance/quoteSummary/${t}?modules=calendarEvents`,
-                    t => `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${t}?modules=calendarEvents`
-                ];
-                for (const makUrl of endpoints) {
-                    if (this.earningsData.length) break;
-                    const results = await Promise.allSettled(
-                        unique.map(t => this.fetchJSONWithProxy(makUrl(encodeURIComponent(t))))
-                    );
-                    results.forEach((r, i) => {
-                        if (r.status === 'fulfilled' && r.value?.quoteSummary?.result?.[0]?.calendarEvents?.earnings) {
-                            const e = r.value.quoteSummary.result[0].calendarEvents.earnings;
-                            const dates = e.earningsDate;
-                            if (dates?.length > 0) {
-                                this.earningsData.push({
-                                    ticker: unique[i],
-                                    name: this.watchlistData[unique[i]]?.name || unique[i],
-                                    date: dates[0].raw * 1000,
-                                    estimate: e.earningsAverage?.fmt || null
-                                });
-                            }
-                        }
-                    });
-                    if (this.earningsData.length) this.log(`Earnings: quoteSummary returned ${this.earningsData.length} results`);
-                }
+            if (this.earningsData.length) {
+                this.earningsData.sort((a, b) => a.date - b.date);
+                CacheManager.set('earnings', this.earningsData, 43200000); // 12h cache
             }
-
-            this.earningsData.sort((a, b) => a.date - b.date);
             this.renderEarningsCalendar();
         },
 
