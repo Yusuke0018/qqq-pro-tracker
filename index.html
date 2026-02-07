@@ -573,6 +573,80 @@
             position: relative; z-index: 1;
         }
 
+        /* ====== Market Alert Banner ====== */
+        .market-alert-banner {
+            margin: 0 0 16px; padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur));
+            border: 1px solid rgba(255, 77, 106, 0.3);
+            background: rgba(255, 77, 106, 0.08);
+            position: relative; z-index: 1;
+            animation: alertPulse 3s ease-in-out infinite;
+        }
+        .market-alert-banner.alert-mixed {
+            border-color: rgba(255, 183, 64, 0.3);
+            background: rgba(255, 183, 64, 0.08);
+        }
+        .alert-header {
+            display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+            font-size: 12px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.5px; color: var(--red);
+        }
+        .market-alert-banner.alert-mixed .alert-header { color: var(--yellow); }
+        .alert-items { display: flex; flex-wrap: wrap; gap: 6px; }
+        .alert-chip {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 5px 10px; border-radius: 6px;
+            font-size: 12px; font-weight: 600; white-space: nowrap;
+        }
+        .alert-chip.bearish { background: rgba(255, 77, 106, 0.15); color: var(--red); }
+        .alert-chip.bullish { background: rgba(0, 230, 138, 0.15); color: var(--green); }
+        .alert-chip.warning { background: rgba(255, 183, 64, 0.15); color: var(--yellow); }
+        @keyframes alertPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.8; } }
+
+        /* ====== News Section ====== */
+        .news-section { display: flex; flex-direction: column; gap: 2px; }
+        .news-item {
+            display: flex; gap: 12px; padding: 12px; border-radius: 8px;
+            transition: background 0.2s; cursor: pointer;
+            text-decoration: none; color: inherit;
+        }
+        .news-item:hover { background: rgba(255, 255, 255, 0.05); }
+        .news-icon {
+            flex-shrink: 0; width: 32px; height: 32px; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px; background: rgba(255, 255, 255, 0.06);
+        }
+        .news-content { flex: 1; min-width: 0; }
+        .news-title {
+            font-size: 13px; font-weight: 500; line-height: 1.4;
+            color: var(--text-primary);
+            display: -webkit-box; -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical; overflow: hidden;
+        }
+        .news-meta {
+            display: flex; align-items: center; gap: 8px;
+            margin-top: 4px; font-size: 11px; color: var(--text-muted);
+        }
+        .news-ticker-badge {
+            display: inline-block; padding: 1px 6px; border-radius: 4px;
+            background: rgba(0, 212, 255, 0.15); color: var(--accent);
+            font-size: 10px; font-weight: 600;
+        }
+        .news-empty {
+            text-align: center; padding: 24px;
+            color: var(--text-muted); font-size: 13px;
+        }
+        .news-tabs { display: flex; gap: 4px; margin-bottom: 12px; flex-wrap: wrap; }
+        .news-tab {
+            padding: 5px 12px; border-radius: 6px;
+            border: 1px solid var(--border-card); background: transparent;
+            color: var(--text-secondary); font-size: 12px; font-weight: 500;
+            cursor: pointer; font-family: Inter, sans-serif; transition: all 0.2s;
+        }
+        .news-tab:hover { border-color: var(--accent); color: var(--text-primary); }
+        .news-tab.active { background: rgba(0, 212, 255, 0.12); border-color: var(--accent); color: var(--accent); }
+
         /* ====== Responsive ====== */
         @media (min-width: 768px) {
             .price-details { grid-template-columns: repeat(4, 1fr); }
@@ -614,6 +688,9 @@
 
     <div class="main-content">
         <div class="market-status" id="marketStatus">Checking market status...</div>
+
+        <!-- Market Alert Banner -->
+        <div id="marketAlertBanner" class="market-alert-banner" style="display:none"></div>
 
         <!-- Watchlist / Heatmap (TOP) -->
         <div class="glass-card">
@@ -775,6 +852,20 @@
                 <button class="time-btn" data-period="1y">1Y</button>
             </div>
             <div class="chart-container" id="chartContainer"><canvas id="priceChart"></canvas></div>
+        </div>
+
+        <!-- Market News -->
+        <div class="glass-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                <h2 class="section-title" style="margin:0">Market News</h2>
+            </div>
+            <div class="news-tabs" id="newsTabs">
+                <button class="news-tab active" data-ticker="all" onclick="app.filterNews('all')">All</button>
+                <button class="news-tab" data-ticker="QQQ" onclick="app.filterNews('QQQ')">QQQ</button>
+            </div>
+            <div id="newsContainer" class="news-section">
+                <div class="news-empty">Loading news...</div>
+            </div>
         </div>
 
         <!-- Add ticker modal -->
@@ -951,6 +1042,9 @@
         },
 
         alertsTriggered: { level12: false, level18: false, ma200: false, rule5: false, vix30: false, vix35: false },
+        newsData: [],
+        newsFilter: 'all',
+        spikeAlerts: [],
         currentMood: 'calm',
         chart: null, chartPeriod: '1d', refreshTimer: null,
 
@@ -990,6 +1084,7 @@
             this.fetchChartData();
             this.fetchWatchlistData();
             this.fetchCryptoData();
+            this.fetchNews();
             this.updateMarketStatus();
             // PWA
             if ('serviceWorker' in navigator) {
@@ -1150,6 +1245,7 @@
                 this.updateLastUpdated();
                 this.updateScoreboard();
                 this.updateMood();
+                this.detectMarketAlerts();
 
             } catch (error) {
                 this.log(`Error: ${error.message}`, 'error');
@@ -1607,6 +1703,21 @@
             };
             this.renderCryptoHeatmap();
 
+            // Demo news
+            const now = Math.floor(Date.now() / 1000);
+            this.newsData = [
+                { uuid: '1', title: 'NVIDIA beats earnings expectations as AI demand remains strong', publisher: 'Reuters', providerPublishTime: now - 3600, link: '#', relatedTicker: 'NVDA' },
+                { uuid: '2', title: 'QQQ drops as tech selloff intensifies amid rate concerns', publisher: 'Bloomberg', providerPublishTime: now - 7200, link: '#', relatedTicker: 'QQQ' },
+                { uuid: '3', title: 'Tesla shares slide after missing quarterly delivery targets', publisher: 'CNBC', providerPublishTime: now - 14400, link: '#', relatedTicker: 'TSLA' },
+                { uuid: '4', title: 'Apple announces new AI features for iPhone at developer conference', publisher: 'The Verge', providerPublishTime: now - 28800, link: '#', relatedTicker: 'AAPL' },
+                { uuid: '5', title: 'Fed signals potential rate cut in September meeting minutes', publisher: 'WSJ', providerPublishTime: now - 43200, link: '#', relatedTicker: 'QQQ' },
+                { uuid: '6', title: 'Microsoft Azure revenue surges 29% driven by AI workloads', publisher: 'CNBC', providerPublishTime: now - 57600, link: '#', relatedTicker: 'MSFT' },
+                { uuid: '7', title: 'Broadcom chip demand soars on AI infrastructure buildout', publisher: 'Reuters', providerPublishTime: now - 72000, link: '#', relatedTicker: 'AVGO' }
+            ];
+            this.renderNews();
+            this.buildNewsTabs();
+            this.detectMarketAlerts();
+
             const labels = [], prices = [];
             let p = 430;
             for (let i = 0; i < 50; i++) {
@@ -1619,7 +1730,7 @@
 
         startAutoRefresh() {
             if (this.refreshTimer) clearInterval(this.refreshTimer);
-            this.refreshTimer = setInterval(() => { if (!this.settings.demoMode) { this.fetchData(); this.fetchWatchlistData(); this.fetchCryptoData(); } }, this.settings.refreshInterval * 1000);
+            this.refreshTimer = setInterval(() => { if (!this.settings.demoMode) { this.fetchData(); this.fetchWatchlistData(); this.fetchCryptoData(); this.fetchNews(); } }, this.settings.refreshInterval * 1000);
         },
 
         openSettings() { $('settingsModal').classList.add('open'); },
@@ -1660,6 +1771,7 @@
                 }
             });
             this.renderWatchlist();
+            this.detectMarketAlerts();
         },
 
         heatmapColor(pct) {
@@ -1877,6 +1989,193 @@
                     <div class="hm-price">${priceStr}</div>
                 </div>`;
             }).join('');
+        },
+
+        // ---- Generic JSON fetch (for non-chart endpoints like news) ----
+        async fetchJSONWithProxy(url) {
+            if (this.isHosted) {
+                try {
+                    const res = await fetch(`/api/proxy?url=${encodeURIComponent(url)}`);
+                    if (res.ok) return await res.json();
+                } catch (e) { this.log(`JSON proxy failed: ${e.message}`, 'warn'); }
+            }
+            try {
+                const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+                if (res.ok) return await res.json();
+            } catch {}
+            for (const proxy of this.corsProxies) {
+                try {
+                    const res = await fetch(proxy + encodeURIComponent(url));
+                    if (res.ok) return await res.json();
+                } catch {}
+            }
+            return null;
+        },
+
+        // ---- News ----
+        async fetchNews() {
+            this.log('Fetching market news');
+            try {
+                const tickers = ['QQQ', ...this.watchlist.slice(0, 6)];
+                const uniqueTickers = [...new Set(tickers)];
+                const results = await Promise.allSettled(
+                    uniqueTickers.map(t =>
+                        this.fetchJSONWithProxy(`https://query2.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(t)}&newsCount=5&quotesCount=0`)
+                    )
+                );
+                const allNews = [];
+                const seen = new Set();
+                results.forEach((r, i) => {
+                    if (r.status === 'fulfilled' && r.value?.news) {
+                        r.value.news.forEach(item => {
+                            if (!seen.has(item.uuid)) {
+                                seen.add(item.uuid);
+                                allNews.push({ ...item, relatedTicker: uniqueTickers[i] });
+                            }
+                        });
+                    }
+                });
+                allNews.sort((a, b) => (b.providerPublishTime || 0) - (a.providerPublishTime || 0));
+                this.newsData = allNews.slice(0, 25);
+                this.renderNews();
+                this.buildNewsTabs();
+            } catch (e) {
+                this.log(`News fetch error: ${e.message}`, 'error');
+            }
+        },
+
+        buildNewsTabs() {
+            const tabs = $('newsTabs');
+            if (!tabs) return;
+            const tickers = new Set(['all', 'QQQ']);
+            this.newsData.forEach(n => { if (n.relatedTicker) tickers.add(n.relatedTicker); });
+            tabs.innerHTML = [...tickers].map(t =>
+                `<button class="news-tab ${t === this.newsFilter ? 'active' : ''}" data-ticker="${t}" onclick="app.filterNews('${t}')">${t === 'all' ? 'All' : t}</button>`
+            ).join('');
+        },
+
+        filterNews(ticker) {
+            this.newsFilter = ticker;
+            document.querySelectorAll('.news-tab').forEach(b => b.classList.toggle('active', b.dataset.ticker === ticker));
+            this.renderNews();
+        },
+
+        renderNews() {
+            const container = $('newsContainer');
+            if (!container) return;
+            const filtered = this.newsFilter === 'all'
+                ? this.newsData
+                : this.newsData.filter(n => n.relatedTicker === this.newsFilter);
+            if (!filtered.length) {
+                container.innerHTML = '<div class="news-empty">No news available</div>';
+                return;
+            }
+            container.innerHTML = filtered.slice(0, 10).map(item => {
+                const timeAgo = this.formatTimeAgo(item.providerPublishTime);
+                const publisher = item.publisher || '';
+                const icon = this.getNewsIcon(item.title || '');
+                const ticker = item.relatedTicker || '';
+                const link = item.link || '#';
+                return `<a class="news-item" href="${link}" target="_blank" rel="noopener">
+                    <div class="news-icon">${icon}</div>
+                    <div class="news-content">
+                        <div class="news-title">${this.escapeHTML(item.title || 'No title')}</div>
+                        <div class="news-meta">
+                            ${ticker ? `<span class="news-ticker-badge">${ticker}</span>` : ''}
+                            <span>${this.escapeHTML(publisher)}</span>
+                            <span>${timeAgo}</span>
+                        </div>
+                    </div>
+                </a>`;
+            }).join('');
+        },
+
+        getNewsIcon(title) {
+            const t = title.toLowerCase();
+            if (t.includes('earning') || t.includes('revenue') || t.includes('profit') || t.includes('quarter')) return '📊';
+            if (t.includes('ai') || t.includes('artificial intelligence') || t.includes('chip') || t.includes('gpu')) return '🤖';
+            if (t.includes('crash') || t.includes('plunge') || t.includes('sell-off') || t.includes('bear') || t.includes('drop') || t.includes('decline') || t.includes('slide') || t.includes('tumble')) return '📉';
+            if (t.includes('surge') || t.includes('rally') || t.includes('bull') || t.includes('jump') || t.includes('soar') || t.includes('record')) return '📈';
+            if (t.includes('fed') || t.includes('rate') || t.includes('inflation') || t.includes('central bank') || t.includes('powell')) return '🏦';
+            if (t.includes('tariff') || t.includes('trade') || t.includes('china') || t.includes('geopolit')) return '🌏';
+            if (t.includes('tesla') || t.includes('ev') || t.includes('electric vehicle')) return '🚗';
+            return '📰';
+        },
+
+        formatTimeAgo(timestamp) {
+            if (!timestamp) return '';
+            const diff = Math.floor(Date.now() / 1000) - timestamp;
+            if (diff < 60) return 'just now';
+            if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+            if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+            if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
+            return new Date(timestamp * 1000).toLocaleDateString();
+        },
+
+        escapeHTML(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        },
+
+        // ---- Market Spike Alerts ----
+        detectMarketAlerts() {
+            const alerts = [];
+            const d = this.data;
+
+            // QQQ daily change
+            if (d.currentPrice && d.previousClose) {
+                const pct = ((d.currentPrice - d.previousClose) / d.previousClose) * 100;
+                if (pct <= -3) alerts.push({ ticker: 'QQQ', type: 'bearish', msg: `QQQ ${pct.toFixed(1)}% 急落` });
+                else if (pct <= -2) alerts.push({ ticker: 'QQQ', type: 'bearish', msg: `QQQ ${pct.toFixed(1)}% 下落` });
+                else if (pct >= 3) alerts.push({ ticker: 'QQQ', type: 'bullish', msg: `QQQ +${pct.toFixed(1)}% 急騰` });
+                else if (pct >= 2) alerts.push({ ticker: 'QQQ', type: 'bullish', msg: `QQQ +${pct.toFixed(1)}% 上昇` });
+            }
+
+            // VIX
+            if (d.vix) {
+                if (d.vix.value >= 30) alerts.push({ ticker: 'VIX', type: 'bearish', msg: `VIX ${d.vix.value.toFixed(1)} 恐怖指数警戒` });
+                else if (d.vix.changePercent >= 15) alerts.push({ ticker: 'VIX', type: 'warning', msg: `VIX +${d.vix.changePercent.toFixed(1)}% 急騰` });
+                else if (d.vix.changePercent >= 10) alerts.push({ ticker: 'VIX', type: 'warning', msg: `VIX +${d.vix.changePercent.toFixed(1)}% 上昇中` });
+            }
+
+            // Watchlist stocks (±5% threshold)
+            Object.entries(this.watchlistData).forEach(([ticker, data]) => {
+                if (data.changePct <= -5) alerts.push({ ticker, type: 'bearish', msg: `${ticker} ${data.changePct.toFixed(1)}% 急落` });
+                else if (data.changePct >= 5) alerts.push({ ticker, type: 'bullish', msg: `${ticker} +${data.changePct.toFixed(1)}% 急騰` });
+            });
+
+            // NQ Futures
+            if (d.nqFutures && Math.abs(d.nqFutures.changePercent) >= 1.5) {
+                const pct = d.nqFutures.changePercent;
+                alerts.push({ ticker: 'NQ', type: pct < 0 ? 'bearish' : 'bullish', msg: `先物 ${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%` });
+            }
+
+            this.spikeAlerts = alerts;
+            this.renderMarketAlerts();
+        },
+
+        renderMarketAlerts() {
+            const banner = $('marketAlertBanner');
+            if (!banner) return;
+            if (!this.spikeAlerts.length) { banner.style.display = 'none'; return; }
+
+            const hasBearish = this.spikeAlerts.some(a => a.type === 'bearish');
+            const hasBullish = this.spikeAlerts.some(a => a.type === 'bullish');
+            const mixed = hasBearish && hasBullish;
+
+            banner.className = `market-alert-banner ${mixed ? 'alert-mixed' : ''}`;
+            banner.style.display = 'block';
+
+            const headerIcon = hasBearish ? '🚨' : '🔔';
+            const headerText = hasBearish ? 'MARKET ALERT' : 'MARKET ACTIVITY';
+
+            banner.innerHTML = `
+                <div class="alert-header">${headerIcon} ${headerText}</div>
+                <div class="alert-items">
+                    ${this.spikeAlerts.map(a => `<span class="alert-chip ${a.type}">${a.msg}</span>`).join('')}
+                </div>
+            `;
         },
 
         log(msg, type = 'info') {
