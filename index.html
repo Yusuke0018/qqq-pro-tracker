@@ -655,6 +655,84 @@
         .news-tab:hover { border-color: var(--accent); color: var(--text-primary); }
         .news-tab.active { background: rgba(0, 212, 255, 0.12); border-color: var(--accent); color: var(--accent); }
 
+        /* ====== Fear & Greed ====== */
+        .fg-container { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+        .fg-score { font-size: 40px; font-weight: 800; margin-top: -4px; }
+        .fg-label { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+        .fg-details {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;
+            width: 100%; margin-top: 14px;
+        }
+        .fg-detail {
+            display: flex; flex-direction: column; gap: 4px;
+            padding: 8px 10px; border-radius: 8px; background: rgba(255,255,255,0.04);
+        }
+        .fg-detail-top { display: flex; justify-content: space-between; font-size: 11px; }
+        .fg-detail-name { color: var(--text-muted); }
+        .fg-detail-val { font-weight: 600; }
+        .fg-detail-bar { height: 3px; border-radius: 2px; background: rgba(255,255,255,0.1); overflow: hidden; }
+        .fg-detail-fill { height: 100%; border-radius: 2px; transition: width 0.8s ease; }
+
+        /* ====== Simulator ====== */
+        .sim-controls { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+        .sim-input-row { display: flex; align-items: center; gap: 6px; }
+        .sim-input-row input[type="number"] {
+            width: 110px; padding: 7px 10px; background: rgba(255,255,255,0.06);
+            border: 1px solid var(--border-card); border-radius: 8px;
+            color: #fff; font-size: 14px; font-family: Inter, sans-serif; text-align: right;
+        }
+        .sim-input-row span { color: var(--text-secondary); font-size: 12px; }
+        .sim-period-tabs { display: flex; gap: 4px; }
+        .sim-period-tab {
+            padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border-card);
+            background: transparent; color: var(--text-secondary); font-size: 12px;
+            font-weight: 500; cursor: pointer; font-family: Inter, sans-serif; transition: all 0.2s;
+        }
+        .sim-period-tab.active { background: rgba(0,212,255,0.12); border-color: var(--accent); color: var(--accent); }
+        .sim-table { width: 100%; border-collapse: collapse; }
+        .sim-table th {
+            text-align: left; padding: 6px 8px; font-size: 10px; color: var(--text-muted);
+            font-weight: 500; border-bottom: 1px solid var(--border-card);
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .sim-table th:not(:first-child) { text-align: right; }
+        .sim-table td { padding: 8px; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+        .sim-table td:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+        .sim-etf { font-weight: 700; }
+        .sim-etf-sub { font-size: 10px; color: var(--text-muted); font-weight: 400; }
+        .sim-note { font-size: 11px; color: var(--text-muted); margin-top: 10px; }
+
+        /* ====== Earnings Calendar ====== */
+        .earnings-list { display: flex; flex-direction: column; gap: 2px; }
+        .earnings-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 10px 12px; border-radius: 8px; transition: background 0.2s;
+        }
+        .earnings-item:hover { background: rgba(255,255,255,0.04); }
+        .earnings-badge {
+            flex-shrink: 0; width: 44px; height: 44px; border-radius: 10px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: rgba(255,255,255,0.06);
+        }
+        .earnings-badge-month { font-size: 9px; font-weight: 600; color: var(--accent); text-transform: uppercase; }
+        .earnings-badge-day { font-size: 17px; font-weight: 800; line-height: 1.1; }
+        .earnings-info { flex: 1; min-width: 0; }
+        .earnings-ticker { font-size: 14px; font-weight: 700; }
+        .earnings-name { font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .earnings-est { font-size: 10px; color: var(--text-secondary); margin-top: 2px; }
+        .earnings-countdown { flex-shrink: 0; text-align: right; }
+        .earnings-days { font-size: 15px; font-weight: 700; }
+        .earnings-days-sub { font-size: 10px; color: var(--text-muted); }
+        .earnings-today { color: var(--red); }
+        .earnings-soon { color: var(--yellow); }
+
+        /* ====== Collapsible sections ====== */
+        .section-toggle { cursor: pointer; user-select: none; display: flex; align-items: center; justify-content: space-between; }
+        .section-toggle .toggle-arrow { font-size: 12px; color: var(--text-muted); transition: transform 0.3s; }
+        .section-toggle.collapsed .toggle-arrow { transform: rotate(-90deg); }
+        .section-body { overflow: hidden; transition: max-height 0.4s ease, opacity 0.3s ease; max-height: 2000px; opacity: 1; }
+        .section-body.hidden { max-height: 0; opacity: 0; padding-top: 0; padding-bottom: 0; }
+
         /* ====== Responsive ====== */
         @media (min-width: 768px) {
             .price-details { grid-template-columns: repeat(4, 1fr); }
@@ -675,6 +753,11 @@
             .score-ring { width: 64px; height: 64px; }
             .score-number { font-size: 18px; }
             .scoreboard { gap: 12px; }
+            .sim-table { font-size: 11px; }
+            .sim-table th, .sim-table td { padding: 6px 4px; }
+            .fg-details { grid-template-columns: 1fr 1fr; }
+            .earnings-badge { width: 38px; height: 38px; }
+            .earnings-badge-day { font-size: 14px; }
         }
     </style>
 </head>
@@ -826,6 +909,29 @@
             <div class="vix-gauge-labels"><span>0</span><span>20</span><span>30</span><span>40+</span></div>
         </div>
 
+        <!-- Fear & Greed Index -->
+        <div class="glass-card">
+            <h2 class="section-title">Fear & Greed Index</h2>
+            <div class="fg-container">
+                <svg viewBox="0 0 200 115" width="200" height="115">
+                    <defs>
+                        <linearGradient id="fgGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stop-color="#ff4d6a"/><stop offset="25%" stop-color="#ff8c42"/>
+                            <stop offset="50%" stop-color="#ffb740"/><stop offset="75%" stop-color="#88cc44"/>
+                            <stop offset="100%" stop-color="#00e68a"/>
+                        </linearGradient>
+                    </defs>
+                    <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="14" stroke-linecap="round"/>
+                    <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="url(#fgGrad)" stroke-width="14" stroke-linecap="round"/>
+                    <line id="fgNeedle" x1="100" y1="100" x2="100" y2="28" stroke="white" stroke-width="2.5" stroke-linecap="round" transform="rotate(-90,100,100)"/>
+                    <circle cx="100" cy="100" r="4" fill="white"/>
+                </svg>
+                <div class="fg-score" id="fgScore">--</div>
+                <div class="fg-label" id="fgLabel">Calculating...</div>
+                <div class="fg-details" id="fgDetails"></div>
+            </div>
+        </div>
+
         <!-- ====== Signal Scoreboard ====== -->
         <div class="glass-card">
             <h2 class="section-title">Buy Signal Scoreboard</h2>
@@ -860,6 +966,41 @@
                 <button class="time-btn" data-period="1y">1Y</button>
             </div>
             <div class="chart-container" id="chartContainer"><canvas id="priceChart"></canvas></div>
+        </div>
+
+        <!-- DCA Simulator -->
+        <div class="glass-card">
+            <h2 class="section-toggle" onclick="app.toggleSection('simBody')">
+                積立シミュレーター <span class="toggle-arrow">▼</span>
+            </h2>
+            <div class="section-body" id="simBody">
+                <div class="sim-controls">
+                    <div class="sim-input-row">
+                        <span>月額</span>
+                        <input type="number" id="simAmount" value="100000" min="1000" step="10000">
+                        <span>円</span>
+                    </div>
+                    <div class="sim-period-tabs">
+                        <button class="sim-period-tab active" data-period="1" onclick="app.setSimPeriod(1)">1Y</button>
+                        <button class="sim-period-tab" data-period="3" onclick="app.setSimPeriod(3)">3Y</button>
+                        <button class="sim-period-tab" data-period="5" onclick="app.setSimPeriod(5)">5Y</button>
+                    </div>
+                </div>
+                <div id="simResults"><div class="news-empty">Loading historical data...</div></div>
+                <div class="sim-note">※ 過去実績に基づく試算です。将来のリターンを保証するものではありません。</div>
+            </div>
+        </div>
+
+        <!-- Earnings Calendar -->
+        <div class="glass-card">
+            <h2 class="section-toggle" onclick="app.toggleSection('earningsBody')">
+                決算カレンダー <span class="toggle-arrow">▼</span>
+            </h2>
+            <div class="section-body" id="earningsBody">
+                <div id="earningsCalendar" class="earnings-list">
+                    <div class="news-empty">Loading earnings dates...</div>
+                </div>
+            </div>
         </div>
 
         <!-- Market News -->
@@ -1053,6 +1194,9 @@
         newsData: [],
         newsFilter: 'all',
         spikeAlerts: [],
+        fearGreedScore: null,
+        simData: {}, simPeriod: 1,
+        earningsData: [],
         currentMood: 'calm',
         chart: null, chartPeriod: '1d', refreshTimer: null,
 
@@ -1094,6 +1238,8 @@
             this.fetchWatchlistData();
             this.fetchCryptoData();
             this.fetchNews();
+            this.fetchSimulatorData();
+            this.fetchEarningsCalendar();
             this.updateMarketStatus();
             // PWA
             if ('serviceWorker' in navigator) {
@@ -1183,6 +1329,7 @@
             });
 
             $('tickerInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') app.addTicker(); });
+            $('simAmount').addEventListener('change', () => app.renderSimulator());
 
             document.querySelectorAll('.time-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
@@ -1255,6 +1402,7 @@
                 this.updateScoreboard();
                 this.updateMood();
                 this.detectMarketAlerts();
+                this.updateFearGreed();
 
             } catch (error) {
                 this.log(`Error: ${error.message}`, 'error');
@@ -1726,6 +1874,23 @@
             this.renderNews();
             this.buildNewsTabs();
             this.detectMarketAlerts();
+            this.updateFearGreed();
+
+            // Demo earnings
+            const today = Date.now();
+            this.earningsData = [
+                { ticker: 'AAPL', name: 'Apple Inc.', date: today + 5 * 86400000, estimate: '2.35' },
+                { ticker: 'MSFT', name: 'Microsoft Corp', date: today + 12 * 86400000, estimate: '3.10' },
+                { ticker: 'NVDA', name: 'NVIDIA Corp', date: today + 20 * 86400000, estimate: '0.82' },
+                { ticker: 'GOOGL', name: 'Alphabet Inc', date: today + 35 * 86400000, estimate: '1.92' },
+                { ticker: 'META', name: 'Meta Platforms', date: today + 42 * 86400000, estimate: '5.25' },
+                { ticker: 'AMZN', name: 'Amazon.com Inc', date: today + 55 * 86400000, estimate: '1.15' },
+                { ticker: 'TSLA', name: 'Tesla Inc', date: today + 68 * 86400000, estimate: '0.73' }
+            ];
+            this.renderEarningsCalendar();
+
+            // Demo simulator placeholder
+            $('simResults').innerHTML = '<div class="news-empty">デモモードでは実データを使用できません</div>';
 
             const labels = [], prices = [];
             let p = 430;
@@ -2247,6 +2412,254 @@
                     ${this.spikeAlerts.map(a => `<span class="alert-chip ${a.type}">${a.msg}</span>`).join('')}
                 </div>
             `;
+        },
+
+        // ---- Fear & Greed ----
+        updateFearGreed() {
+            const d = this.data;
+            if (!d.currentPrice || !d.previousClose) return;
+
+            // VIX score (0-100): low VIX = greed, high VIX = fear
+            const vixScore = d.vix ? Math.max(0, Math.min(100, 100 - ((d.vix.value - 12) / 28) * 100)) : 50;
+
+            // Momentum score: daily change mapped -3% to +3% → 0-100
+            const dailyPct = ((d.currentPrice - d.previousClose) / d.previousClose) * 100;
+            const momentumScore = Math.max(0, Math.min(100, (dailyPct + 3) / 6 * 100));
+
+            // 200MA trend: deviation mapped -10% to +10% → 0-100
+            let maScore = 50;
+            if (d.ma200) {
+                const maDev = ((d.currentPrice - d.ma200) / d.ma200) * 100;
+                maScore = Math.max(0, Math.min(100, (maDev + 10) / 20 * 100));
+            }
+
+            // Market breadth: % of watchlist stocks positive
+            const wlEntries = Object.values(this.watchlistData);
+            const breadthScore = wlEntries.length > 0
+                ? (wlEntries.filter(w => w.changePct > 0).length / wlEntries.length) * 100 : 50;
+
+            const weights = { vix: 0.35, momentum: 0.25, ma: 0.25, breadth: 0.15 };
+            const score = Math.round(
+                vixScore * weights.vix + momentumScore * weights.momentum +
+                maScore * weights.ma + breadthScore * weights.breadth
+            );
+            this.fearGreedScore = score;
+
+            // Update gauge
+            const needle = $('fgNeedle');
+            if (needle) needle.setAttribute('transform', `rotate(${score * 1.8 - 90},100,100)`);
+
+            const scoreEl = $('fgScore');
+            const labelEl = $('fgLabel');
+            if (scoreEl) scoreEl.textContent = score;
+
+            let label, color;
+            if (score <= 20) { label = 'EXTREME FEAR'; color = 'var(--red)'; }
+            else if (score <= 40) { label = 'FEAR'; color = 'var(--orange)'; }
+            else if (score <= 60) { label = 'NEUTRAL'; color = 'var(--yellow)'; }
+            else if (score <= 80) { label = 'GREED'; color = 'var(--green)'; }
+            else { label = 'EXTREME GREED'; color = '#00ffaa'; }
+
+            if (scoreEl) scoreEl.style.color = color;
+            if (labelEl) { labelEl.textContent = label; labelEl.style.color = color; }
+
+            // Detail bars
+            const details = $('fgDetails');
+            if (details) {
+                const items = [
+                    { name: 'VIX', val: Math.round(vixScore), color: this.fgBarColor(vixScore) },
+                    { name: 'Momentum', val: Math.round(momentumScore), color: this.fgBarColor(momentumScore) },
+                    { name: '200MA Trend', val: Math.round(maScore), color: this.fgBarColor(maScore) },
+                    { name: 'Breadth', val: Math.round(breadthScore), color: this.fgBarColor(breadthScore) }
+                ];
+                details.innerHTML = items.map(i => `
+                    <div class="fg-detail">
+                        <div class="fg-detail-top"><span class="fg-detail-name">${i.name}</span><span class="fg-detail-val" style="color:${i.color}">${i.val}</span></div>
+                        <div class="fg-detail-bar"><div class="fg-detail-fill" style="width:${i.val}%;background:${i.color}"></div></div>
+                    </div>
+                `).join('');
+            }
+        },
+
+        fgBarColor(val) {
+            if (val <= 25) return 'var(--red)';
+            if (val <= 45) return 'var(--orange)';
+            if (val <= 55) return 'var(--yellow)';
+            if (val <= 75) return 'var(--green)';
+            return '#00ffaa';
+        },
+
+        // ---- DCA Simulator ----
+        async fetchSimulatorData() {
+            this.log('Fetching simulator data');
+            const end = Math.floor(Date.now() / 1000);
+            const start = end - 5 * 365 * 86400;
+            const etfs = ['QQQ', 'QLD', 'TQQQ'];
+            const results = await Promise.allSettled(
+                etfs.map(t => this.fetchWithProxy(
+                    `https://query1.finance.yahoo.com/v8/finance/chart/${t}?period1=${start}&period2=${end}&interval=1mo`
+                ))
+            );
+            results.forEach((r, i) => {
+                if (r.status === 'fulfilled' && r.value?.chart?.result?.[0]) {
+                    const res = r.value.chart.result[0];
+                    const timestamps = res.timestamp || [];
+                    const closes = res.indicators.quote[0].close || [];
+                    this.simData[etfs[i]] = timestamps.map((t, j) => ({
+                        date: t, price: closes[j]
+                    })).filter(p => p.price !== null);
+                }
+            });
+            this.renderSimulator();
+        },
+
+        setSimPeriod(years) {
+            this.simPeriod = years;
+            document.querySelectorAll('.sim-period-tab').forEach(b =>
+                b.classList.toggle('active', parseInt(b.dataset.period) === years)
+            );
+            this.renderSimulator();
+        },
+
+        renderSimulator() {
+            const container = $('simResults');
+            if (!container) return;
+            const amount = parseInt($('simAmount')?.value) || 100000;
+            const rate = this.data.usdjpy?.rate || 150;
+            const months = this.simPeriod * 12;
+            const etfs = [
+                { sym: 'QQQ', name: 'NASDAQ 100', leverage: '1x' },
+                { sym: 'QLD', name: 'Ultra QQQ', leverage: '2x' },
+                { sym: 'TQQQ', name: 'UltraPro QQQ', leverage: '3x' }
+            ];
+
+            const rows = etfs.map(etf => {
+                const data = this.simData[etf.sym];
+                if (!data || data.length < 2) return null;
+
+                const recent = data.slice(-months - 1);
+                if (recent.length < 2) return null;
+
+                // 騰落率 (price return)
+                const startPrice = recent[0].price;
+                const endPrice = recent[recent.length - 1].price;
+                const priceReturn = ((endPrice - startPrice) / startPrice) * 100;
+
+                // DCA calculation
+                const monthlyUsd = amount / rate;
+                let totalShares = 0;
+                let totalInvested = 0;
+                for (let i = 0; i < recent.length - 1; i++) {
+                    totalShares += monthlyUsd / recent[i].price;
+                    totalInvested += amount;
+                }
+                const currentValue = totalShares * endPrice * rate;
+                const dcaReturn = ((currentValue - totalInvested) / totalInvested) * 100;
+                const profit = currentValue - totalInvested;
+
+                return { ...etf, priceReturn, totalInvested, currentValue, dcaReturn, profit };
+            }).filter(Boolean);
+
+            if (!rows.length) {
+                container.innerHTML = '<div class="news-empty">データ取得中...</div>';
+                return;
+            }
+
+            const fmtJPY = (v) => '¥' + Math.round(v).toLocaleString();
+            const fmtPct = (v) => `<span style="color:${v >= 0 ? 'var(--green)' : 'var(--red)'}">${v >= 0 ? '+' : ''}${v.toFixed(1)}%</span>`;
+
+            container.innerHTML = `
+                <table class="sim-table">
+                    <thead><tr><th>ETF</th><th>騰落率</th><th>投資額</th><th>評価額</th><th>損益</th><th>リターン</th></tr></thead>
+                    <tbody>${rows.map(r => `
+                        <tr>
+                            <td><span class="sim-etf">${r.sym}</span><br><span class="sim-etf-sub">${r.name} (${r.leverage})</span></td>
+                            <td>${fmtPct(r.priceReturn)}</td>
+                            <td>${fmtJPY(r.totalInvested)}</td>
+                            <td style="font-weight:600">${fmtJPY(r.currentValue)}</td>
+                            <td style="color:${r.profit >= 0 ? 'var(--green)' : 'var(--red)'}; font-weight:600">${r.profit >= 0 ? '+' : ''}${fmtJPY(r.profit)}</td>
+                            <td>${fmtPct(r.dcaReturn)}</td>
+                        </tr>
+                    `).join('')}</tbody>
+                </table>
+            `;
+        },
+
+        // ---- Earnings Calendar ----
+        async fetchEarningsCalendar() {
+            this.log('Fetching earnings calendar');
+            const tickers = [...this.mag7, ...this.watchlist.filter(t => !this.mag7.includes(t))];
+            const unique = [...new Set(tickers)].slice(0, 15);
+            const results = await Promise.allSettled(
+                unique.map(t =>
+                    this.fetchJSONWithProxy(`https://query2.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(t)}?modules=calendarEvents`)
+                )
+            );
+            this.earningsData = [];
+            results.forEach((r, i) => {
+                if (r.status === 'fulfilled' && r.value?.quoteSummary?.result?.[0]?.calendarEvents?.earnings) {
+                    const e = r.value.quoteSummary.result[0].calendarEvents.earnings;
+                    const dates = e.earningsDate;
+                    if (dates && dates.length > 0) {
+                        this.earningsData.push({
+                            ticker: unique[i],
+                            name: this.watchlistData[unique[i]]?.name || unique[i],
+                            date: dates[0].raw * 1000,
+                            estimate: e.earningsAverage?.fmt || null,
+                            low: e.earningsLow?.fmt || null,
+                            high: e.earningsHigh?.fmt || null
+                        });
+                    }
+                }
+            });
+            this.earningsData.sort((a, b) => a.date - b.date);
+            this.renderEarningsCalendar();
+        },
+
+        renderEarningsCalendar() {
+            const container = $('earningsCalendar');
+            if (!container) return;
+            if (!this.earningsData.length) {
+                container.innerHTML = '<div class="news-empty">決算日情報なし</div>';
+                return;
+            }
+            const now = Date.now();
+            container.innerHTML = this.earningsData.map(e => {
+                const d = new Date(e.date);
+                const month = d.toLocaleString('en', { month: 'short' });
+                const day = d.getDate();
+                const diffDays = Math.ceil((e.date - now) / 86400000);
+                let countdownClass = '', countdownText = '';
+                if (diffDays < 0) { countdownText = `${Math.abs(diffDays)}日前`; countdownClass = ''; }
+                else if (diffDays === 0) { countdownText = 'TODAY'; countdownClass = 'earnings-today'; }
+                else if (diffDays <= 7) { countdownText = `${diffDays}日後`; countdownClass = 'earnings-soon'; }
+                else { countdownText = `${diffDays}日後`; countdownClass = ''; }
+                const estStr = e.estimate ? `EPS予想: $${e.estimate}` : '';
+
+                return `<div class="earnings-item">
+                    <div class="earnings-badge">
+                        <div class="earnings-badge-month">${month}</div>
+                        <div class="earnings-badge-day">${day}</div>
+                    </div>
+                    <div class="earnings-info">
+                        <div class="earnings-ticker">${e.ticker}</div>
+                        <div class="earnings-name">${this.escapeHTML(e.name)}</div>
+                        ${estStr ? `<div class="earnings-est">${estStr}</div>` : ''}
+                    </div>
+                    <div class="earnings-countdown ${countdownClass}">
+                        <div class="earnings-days">${countdownText}</div>
+                    </div>
+                </div>`;
+            }).join('');
+        },
+
+        // ---- Section toggle ----
+        toggleSection(id) {
+            const body = $(id);
+            if (!body) return;
+            body.classList.toggle('hidden');
+            const header = body.previousElementSibling || body.parentElement.querySelector('.section-toggle');
+            if (header) header.classList.toggle('collapsed', body.classList.contains('hidden'));
         },
 
         log(msg, type = 'info') {
